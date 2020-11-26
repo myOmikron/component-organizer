@@ -1,6 +1,7 @@
 from django.db.models import FloatField, CharField
 
 from backend.base_models import AbstractItemModel
+from backend.helper import UnicodeEscape
 
 
 class ElectronicTemplate(AbstractItemModel):
@@ -19,6 +20,6 @@ class Resistor(ElectronicTemplate):
     max_power_dissipation = FloatField(default=0, blank=True)
 
     def __str__(self):
-        return ", ".join([f"Resistor {self.resistance} Ohm",
-                          f"{self.tolerance} %" if self.tolerance != 0 else None,
-                          f"max {self.max_power_dissipation} W" if self.max_power_dissipation != 0 else None])
+        return "".join([f"Resistor {self.resistance} {UnicodeEscape.OHM}",
+                        f", {UnicodeEscape.PLUS_MINUS}{self.tolerance} %" if self.tolerance != 0 else "",
+                        f", max {self.max_power_dissipation} W" if self.max_power_dissipation != 0 else ""])
