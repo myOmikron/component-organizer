@@ -47,8 +47,8 @@ class AbstractItemModel(models.Model):
     class Meta:
         abstract = True
 
-    custom_values = models.ManyToManyField(KeyValuePair)
-    locations = models.ManyToManyField(ItemLocationModel)
+    custom_values = models.ManyToManyField(KeyValuePair, blank=True)
+    locations = models.ManyToManyField(ItemLocationModel, blank=True)
 
 
 class ItemModel(AbstractItemModel):
