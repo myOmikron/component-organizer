@@ -4,55 +4,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 
 
-class Dictionary(models.Model):
-
-    def __getitem__(self, key):
-        return self.keyvaluepair_set.get(key=key).value
-
-    def __setitem__(self, key, value):
-        try:
-            kvp = self.keyvaluepair_set.get(key=key)
-
-        except KeyValuePair.DoesNotExist:
-            KeyValuePair.objects.create(container=self, key=key, value=value)
-
-        else:
-            kvp.value = value
-            kvp.save()
-
-    def __delitem__(self, key):
-        try:
-            kvp = self.keyvaluepair_set.get(key=key)
-
-        except KeyValuePair.DoesNotExist:
-            raise KeyError
-
-        else:
-            kvp.delete()
-
-    def iterkeys(self):
-        return iter(kvp.key for kvp in self.keyvaluepair_set.all())
-
-    __iter__ = iterkeys
-
-    def iteritems(self):
-        return iter((kvp.key, kvp.value) for kvp in self.keyvaluepair_set.all())
-
-    def keys(self):
-        return [kvp.key for kvp in self.keyvaluepair_set.all()]
-
-    def items(self):
-        return [(kvp.key, kvp.value) for kvp in self.keyvaluepair_set.all()]
-
-    def clear(self):
-        self.keyvaluepair_set.all().delete()
-
-    def __str__(self):
-        return f"{dict(self.items())}"
-
-
 class KeyValuePair(models.Model):
-    container = models.ForeignKey(Dictionary, db_index=True, on_delete=models.CASCADE)
     key = models.CharField(max_length=255, db_index=True)
     value = models.CharField(max_length=255, db_index=True)
 
@@ -84,19 +36,20 @@ class ItemLocationModel(models.Model):
         return self.parent.path
 
 
-def create_default_dict() -> int:
-    dictionary = Dictionary()
-    dictionary.save()
-    return dictionary.id
-
-
-class ItemModel(models.Model):
+class AbstractItemModel(models.Model):
     """
     Can be subclassed for templates
     """
-    name = models.CharField(max_length=255, default="")
-    custom_values = models.ForeignKey(Dictionary, on_delete=models.CASCADE, default=create_default_dict)
+
+    class Meta:
+        abstract = True
+
+    custom_values = models.ManyToManyField(KeyValuePair)
     locations = models.ManyToManyField(ItemLocationModel)
+
+
+class ItemModel(AbstractItemModel):
+    name = models.CharField(max_length=255, default="")
 
     def __str__(self):
         return self.name
