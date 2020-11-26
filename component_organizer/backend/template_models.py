@@ -49,3 +49,10 @@ class Thermistor(BaseResistor):
     def __str__(self):
         return "".join([f"{self.thermistor_type}-Thermistor"])
 
+
+class Varistor(BaseResistor):
+    breakdown_voltage = FloatField(default=0, blank=False)
+
+    def __str__(self):
+        return "Varistor" + f" {self.breakdown_voltage} V" if self.breakdown_voltage != 0 else ""
+
