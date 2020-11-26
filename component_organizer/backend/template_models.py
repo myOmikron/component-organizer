@@ -56,3 +56,9 @@ class Varistor(BaseResistor):
     def __str__(self):
         return "Varistor" + f" {self.breakdown_voltage} V" if self.breakdown_voltage != 0 else ""
 
+
+class MagnetoResistor(BaseResistor):
+    pass
+
+    def __str__(self):
+        return "Magento-Resistor"
