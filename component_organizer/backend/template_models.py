@@ -38,3 +38,14 @@ class Potentiometer(BaseResistor):
         return "".join([f"Potentiometer {self.min_resistance}-{self.max_resistance} {UnicodeEscape.OHM}",
                         f", {UnicodeEscape.PLUS_MINUS}{self.tolerance} %" if self.tolerance != 0 else "",
                         f", max {self.max_power_dissipation} W" if self.max_power_dissipation != 0 else ""])
+
+
+class Thermistor(BaseResistor):
+    thermistor_type = CharField(max_length=255, choices=[("NTC", "NTC"), ("PTC", "PTC")], default="NTC")
+    temp_min = FloatField(default=0, blank=True)
+    temp_max = FloatField(default=0, blank=True)
+    temp_switch = FloatField(default=0, blank=True)
+
+    def __str__(self):
+        return "".join([f"{self.thermistor_type}-Thermistor"])
+
