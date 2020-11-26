@@ -58,7 +58,12 @@ class Varistor(BaseResistor):
 
 
 class MagnetoResistor(BaseResistor):
-    pass
 
     def __str__(self):
         return "Magento-Resistor"
+
+
+class PhotoResistor(BaseResistor):
+
+    def __str__(self):
+        return "Photo-Resistor"
