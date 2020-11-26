@@ -35,6 +35,9 @@ class ItemLocationModel(models.Model):
     def path(self):
         return self.parent.path
 
+    def __str__(self):
+        return f"{self.number}x in {self.path}"
+
 
 class AbstractItemModel(models.Model):
     """
