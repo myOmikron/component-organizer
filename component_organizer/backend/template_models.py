@@ -51,7 +51,7 @@ class Thermistor(BaseResistor):
 
 
 class Varistor(BaseResistor):
-    breakdown_voltage = FloatField(default=0, blank=False)
+    breakdown_voltage = FloatField(default=0)
 
     def __str__(self):
         return "Varistor" + f" {self.breakdown_voltage} V" if self.breakdown_voltage != 0 else ""
@@ -67,3 +67,11 @@ class PhotoResistor(BaseResistor):
 
     def __str__(self):
         return "Photo-Resistor"
+
+
+class ShuntResistor(BaseResistor):
+    max_current = FloatField(default=0)
+    temperature_coefficient = FloatField(default=0, blank=True)
+
+    def __str__(self):
+        return f"Shunt {self.max_current} A"
