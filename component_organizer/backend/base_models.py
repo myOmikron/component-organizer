@@ -29,14 +29,14 @@ class ContainerModel(models.Model):
 
 class ItemLocationModel(models.Model):
     parent = models.ForeignKey("ContainerModel", on_delete=models.CASCADE)
-    number = models.PositiveIntegerField(validators=[MinValueValidator(1)], default=1)
+    amount = models.PositiveIntegerField(validators=[MinValueValidator(1)], default=1)
 
     @property
     def path(self):
         return self.parent.path
 
     def __str__(self):
-        return f"{self.number}x in {self.path}"
+        return f"{self.amount}x in {self.path}"
 
 
 class AbstractItemModel(models.Model):
