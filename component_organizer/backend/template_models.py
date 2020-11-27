@@ -1,4 +1,4 @@
-from django.db.models import FloatField, CharField
+from django.db.models import FloatField, CharField, BooleanField
 
 from backend.base_models import AbstractItemModel
 from backend.helper import UnicodeEscape
@@ -75,3 +75,25 @@ class ShuntResistor(BaseResistor):
 
     def __str__(self):
         return f"Shunt {self.max_current} A"
+
+
+class Capacitor(ElectronicTemplate):
+    capacitor_type = CharField(max_length=255, choices=[("Ceramic capacitor", "ceramic"),
+                                                        ("Electrolytic capacitor", "electrolytic"),
+                                                        ("Air capacitor", "air"),
+                                                        ("Film capacitor", "film"),
+                                                        ("Mica capacitor", "mica"),
+                                                        ("Polymer capacitor", "polymer"),
+                                                        ("Supercapacitor", "super"),
+                                                        ("Tantalum capacitor", "tantalum"),
+                                                        ("Trimmer capacitor", "trim")], default="ceramic")
+    polarized = BooleanField(default=False)
+    capacitance = FloatField(default=0)
+    max_voltage = FloatField(default=0, blank=True)
+    max_temperature = FloatField(default=0, blank=True)
+    tolerance = FloatField(default=0, blank=True)
+    min_capacitance = FloatField(default=0, blank=True)
+    max_capacitance = FloatField(default=0, blank=True)
+
+    def __str__(self):
+        return f"{self.capacitor_type}, {self.capacitance}"
