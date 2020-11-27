@@ -88,7 +88,7 @@ class Capacitor(ElectronicTemplate):
                                                         ("Tantalum capacitor", "tantalum"),
                                                         ("Trimmer capacitor", "trim")], default="ceramic")
     polarized = BooleanField(default=False)
-    capacitance = FloatField(default=0)
+    capacitance = FloatField(default=0, blank=True)
     max_voltage = FloatField(default=0, blank=True)
     max_temperature = FloatField(default=0, blank=True)
     tolerance = FloatField(default=0, blank=True)
