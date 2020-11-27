@@ -59,4 +59,9 @@ class CapacitorAdmin(admin.ModelAdmin):
     list_display = ("__str__", "capacitor_type", "capacitance", "max_voltage", "max_temperature", "mounting")
 
 
+@admin.register(Fuse)
+class FuseAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "rated_current", "trigger_characteristics", "mounting")
+
+
 admin.site.unregister(Group)

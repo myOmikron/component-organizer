@@ -97,3 +97,15 @@ class Capacitor(ElectronicTemplate):
 
     def __str__(self):
         return f"{self.capacitor_type}, {self.capacitance}"
+
+
+class Fuse(ElectronicTemplate):
+    rated_current = FloatField(default=0)
+    trigger_characteristics = CharField(max_length=255, choices=[("superflink", "FF"),
+                                                                 ("flink", "F"),
+                                                                 ("mittelträge", "M"),
+                                                                 ("träge", "T"),
+                                                                 ("superträge", "TT")], default="F")
+
+    def __str__(self):
+        return f"Fuse, {self.rated_current} A, {self.trigger_characteristics}"
