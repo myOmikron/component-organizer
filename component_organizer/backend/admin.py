@@ -4,6 +4,11 @@ from django.contrib.auth.models import Group
 from backend.models import *
 
 
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "path")
+
+
 @admin.register(KeyValuePair)
 class KeyValuePairAdmin(admin.ModelAdmin):
     list_display = ("key", "value")
@@ -11,7 +16,7 @@ class KeyValuePairAdmin(admin.ModelAdmin):
 
 @admin.register(ContainerModel)
 class ContainerModelAdmin(admin.ModelAdmin):
-    list_display = ("parent", "name")
+    list_display = ("name", "path")
 
 
 @admin.register(ItemLocationModel)

@@ -4,6 +4,18 @@ from django.db import models
 from django.core.validators import MinValueValidator
 
 
+class Category(models.Model):
+    name = models.CharField(default="", max_length=255)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, blank=True, null=True)
+
+    @property
+    def path(self):
+        if self.parent:
+            return os.path.join(self.parent.path, self.name)
+        else:
+            return self.name
+
+
 class KeyValuePair(models.Model):
     key = models.CharField(max_length=255, db_index=True)
     value = models.CharField(max_length=255, db_index=True)
@@ -49,6 +61,7 @@ class AbstractItemModel(models.Model):
 
     custom_values = models.ManyToManyField(KeyValuePair, blank=True)
     locations = models.ManyToManyField(ItemLocationModel, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
 
 class ItemModel(AbstractItemModel):
