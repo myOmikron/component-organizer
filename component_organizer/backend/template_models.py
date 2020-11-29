@@ -85,10 +85,19 @@ class Capacitor(ElectronicTemplate):
                                                         ("Mica capacitor", "mica"),
                                                         ("Polymer capacitor", "polymer"),
                                                         ("Supercapacitor", "super"),
-                                                        ("Tantalum capacitor", "tantalum"),
-                                                        ("Trimmer capacitor", "trim")], default="ceramic")
+                                                        ("Tantalum capacitor", "tantalum")], default="ceramic")
     polarized = BooleanField(default=False)
     capacitance = FloatField(default=0, blank=True)
+    max_voltage = FloatField(default=0, blank=True)
+    max_temperature = FloatField(default=0, blank=True)
+    tolerance = FloatField(default=0, blank=True)
+
+    def __str__(self):
+        return f"{self.capacitor_type}, {self.capacitance} F"
+
+
+class TrimmerCapacitor(ElectronicTemplate):
+    polarized = BooleanField(default=False)
     max_voltage = FloatField(default=0, blank=True)
     max_temperature = FloatField(default=0, blank=True)
     tolerance = FloatField(default=0, blank=True)
@@ -96,7 +105,7 @@ class Capacitor(ElectronicTemplate):
     max_capacitance = FloatField(default=0, blank=True)
 
     def __str__(self):
-        return f"{self.capacitor_type}, {self.capacitance}"
+        return f"Trimmer Capacitor, min {self.min_capacitance} F, max {self.max_capacitance} F"
 
 
 class Fuse(ElectronicTemplate):
