@@ -117,3 +117,22 @@ class Wire(ElectronicTemplate):
 
     def __str__(self):
         return f"Wire {self.length}m, {UnicodeEscape.DIAMETER} {self.diameter}"
+
+
+class Inductor(ElectronicTemplate):
+    inductance = FloatField(default=0)
+    core_material = CharField(default="air", max_length=255,
+                              choices=[("air", "air"), ("iron", "iron"), ("ferrite", "ferrite")])
+
+    def __str__(self):
+        return f"Inductor {self.core_material} core, {self.inductance} H"
+
+
+class VariableInductor(ElectronicTemplate):
+    min_inductance = FloatField(default=0)
+    max_inductance = FloatField(default=0)
+    core_material = CharField(default="air", max_length=255,
+                              choices=[("air", "air"), ("iron", "iron"), ("ferrite", "ferrite")])
+
+    def __str__(self):
+        return f"Variable Inductor {self.core_material}, min {self.min_inductance} H, max {self.max_inductance} H"
