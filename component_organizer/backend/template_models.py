@@ -114,3 +114,6 @@ class Fuse(ElectronicTemplate):
 class Wire(ElectronicTemplate):
     length = FloatField(default=0)
     diameter = FloatField(default=0)
+
+    def __str__(self):
+        return f"Wire {self.length}m, {UnicodeEscape.DIAMETER} {self.diameter}"
