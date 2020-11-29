@@ -69,4 +69,9 @@ class FuseAdmin(admin.ModelAdmin):
     list_display = ("__str__", "rated_current", "trigger_characteristics", "mounting")
 
 
+@admin.register(Wire)
+class WireAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "length", "diameter")
+
+
 admin.site.unregister(Group)

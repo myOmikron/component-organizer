@@ -109,3 +109,8 @@ class Fuse(ElectronicTemplate):
 
     def __str__(self):
         return f"Fuse, {self.rated_current} A, {self.trigger_characteristics}"
+
+
+class Wire(ElectronicTemplate):
+    length = FloatField(default=0)
+    diameter = FloatField(default=0)
