@@ -21,7 +21,12 @@ class ContainerModelAdmin(admin.ModelAdmin):
 
 @admin.register(ItemLocation)
 class ItemLocationModelAdmin(admin.ModelAdmin):
-    list_display = ("parent", "amount", "path")
+    list_display = ("parent", "amount", "item")
+
+
+@admin.register(UniqueItem)
+class UniqueItemAdmin(admin.ModelAdmin):
+    list_display = ("name", )
 
 
 @admin.register(Resistor)
