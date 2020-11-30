@@ -74,4 +74,9 @@ class WireAdmin(admin.ModelAdmin):
     list_display = ("__str__", "length", "diameter")
 
 
+@admin.register(Transformer)
+class TransformerAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "transform_ratio", "max_power_dissipation")
+
+
 admin.site.unregister(Group)

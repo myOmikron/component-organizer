@@ -145,3 +145,12 @@ class VariableInductor(ElectronicTemplate):
 
     def __str__(self):
         return f"Variable Inductor {self.core_material}, min {self.min_inductance} H, max {self.max_inductance} H"
+
+
+class Transformer(ElectronicTemplate):
+    max_voltage_primary = FloatField(default=0)
+    max_power_dissipation = FloatField(default=0)
+    transform_ratio = CharField(default="", max_length=255)
+
+    def __str__(self):
+        return f"Transformer, {self.transform_ratio}"
