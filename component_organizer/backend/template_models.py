@@ -154,3 +154,19 @@ class Transformer(ElectronicTemplate):
 
     def __str__(self):
         return f"Transformer, {self.transform_ratio}"
+
+
+class Diode(ElectronicTemplate):
+    name = CharField(default="", max_length=255)
+    voltage_drop = FloatField(default=0)
+    breakdown_voltage = FloatField(default=0, blank=True)
+    diode_type = CharField(default="rectifier", max_length=255,
+                           choices=[("rectifier", "rectifier"), ("schottky", "schottky"), ("zener", "zener"),
+                                    ("led", "led"), ("photo diode", "photodiode"), ("laser diode", "laserdiode"),
+                                    ("tunnel diode", "tunneldiode"), ("backward diode", "backwarddiode"),
+                                    ("avalanche diode", "avalanchediode"), ("TVS diode", "tvsdioide"),
+                                    ("constant current diode", "constantcurrentdiode"), ("vacuum diode", "vacuumdiode"),
+                                    ("step recovery diode", "steprecoverydiode")])
+
+    def __str__(self):
+        return f"{self.name}, {self.diode_type}, {self.breakdown_voltage} V"

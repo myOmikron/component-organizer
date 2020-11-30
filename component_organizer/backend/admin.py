@@ -79,4 +79,9 @@ class TransformerAdmin(admin.ModelAdmin):
     list_display = ("__str__", "transform_ratio", "max_power_dissipation")
 
 
+@admin.register(Diode)
+class DiodeAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "name", "diode_type", "breakdown_voltage")
+
+
 admin.site.unregister(Group)
