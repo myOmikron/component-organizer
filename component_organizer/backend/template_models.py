@@ -170,3 +170,11 @@ class Diode(ElectronicTemplate):
 
     def __str__(self):
         return f"{self.name}, {self.diode_type}, {self.breakdown_voltage} V"
+
+
+class Relay(ElectronicTemplate):
+    max_current = FloatField(default=0)
+    max_voltage = FloatField(default=0)
+
+    def __str__(self):
+        return f""

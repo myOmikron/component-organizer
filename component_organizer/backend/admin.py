@@ -84,4 +84,9 @@ class DiodeAdmin(admin.ModelAdmin):
     list_display = ("__str__", "name", "diode_type", "breakdown_voltage")
 
 
+@admin.register(Relay)
+class RelayAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "max_voltage", "max_current")
+
+
 admin.site.unregister(Group)
