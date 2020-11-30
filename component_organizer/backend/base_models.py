@@ -43,7 +43,7 @@ class Container(models.Model):
 
 
 class ItemLocation(models.Model):
-    parent = models.ForeignKey("backend.base_models.Container", on_delete=models.CASCADE)
+    parent = models.ForeignKey("backend.Container", on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(validators=[MinValueValidator(1)], default=1)
 
     @property
