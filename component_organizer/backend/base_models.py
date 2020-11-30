@@ -39,6 +39,13 @@ class Container(models.Model):
         else:
             return self.name
 
+    @property
+    def id_path(self):
+        if self.parent:
+            return self.parent.id_path + [(self.name, self.id)]
+        else:
+            return [(self.name, self.id)]
+
     def __str__(self):
         return f"Container '{self.name}'"
 

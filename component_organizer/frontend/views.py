@@ -9,11 +9,10 @@ class BrowserView(TemplateView):
     template_name = "frontend/browser.html"
 
     def get(self, request: HttpRequest, ct: int = None, *args, **kwargs):
-        if ct is None:
-            path = "/"
-        else:
+        id_path = [("", "")]
+        if ct is not None:
             container = get_object_or_404(Container, id=ct)
-            path = f"/{container.path}"
+            id_path.extend(container.id_path)
 
         children = list(map(
             lambda x: (x.id, x.name),
@@ -29,7 +28,7 @@ class BrowserView(TemplateView):
             request,
             self.template_name,
             {
-                "path": path,
+                "id_path": id_path,
                 "containers": children,
                 "items": items
             })
