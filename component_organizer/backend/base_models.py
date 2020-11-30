@@ -27,7 +27,7 @@ class KeyValuePair(models.Model):
         return f"{self.key}={self.value}"
 
 
-class ContainerModel(models.Model):
+class Container(models.Model):
     parent = models.ForeignKey("self", on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=255, default="")
 
@@ -42,8 +42,8 @@ class ContainerModel(models.Model):
         return f"Container '{self.name}'"
 
 
-class ItemLocationModel(models.Model):
-    parent = models.ForeignKey("ContainerModel", on_delete=models.CASCADE)
+class ItemLocation(models.Model):
+    parent = models.ForeignKey("backend.base_models.Container", on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(validators=[MinValueValidator(1)], default=1)
 
     @property
@@ -54,7 +54,7 @@ class ItemLocationModel(models.Model):
         return f"{self.amount}x in {self.path}"
 
 
-class AbstractItemModel(models.Model):
+class AbstractItem(models.Model):
     """
     Can be subclassed for templates
     """
@@ -63,11 +63,11 @@ class AbstractItemModel(models.Model):
         abstract = True
 
     custom_values = models.ManyToManyField(KeyValuePair, blank=True)
-    locations = models.ManyToManyField(ItemLocationModel, blank=True)
+    locations = models.ManyToManyField(ItemLocation, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
 
-class ItemModel(AbstractItemModel):
+class Item(AbstractItem):
     name = models.CharField(max_length=255, default="")
 
     def __str__(self):

@@ -1,10 +1,10 @@
 from django.db.models import FloatField, CharField, BooleanField
 
-from backend.base_models import AbstractItemModel
+from backend.base_models import AbstractItem
 from backend.helper import UnicodeEscape
 
 
-class ElectronicTemplate(AbstractItemModel):
+class ElectronicTemplate(AbstractItem):
     class Meta:
         abstract = True
 

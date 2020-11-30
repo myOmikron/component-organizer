@@ -14,12 +14,12 @@ class KeyValuePairAdmin(admin.ModelAdmin):
     list_display = ("key", "value")
 
 
-@admin.register(ContainerModel)
+@admin.register(Container)
 class ContainerModelAdmin(admin.ModelAdmin):
     list_display = ("name", "path")
 
 
-@admin.register(ItemLocationModel)
+@admin.register(ItemLocation)
 class ItemLocationModelAdmin(admin.ModelAdmin):
     list_display = ("parent", "amount", "path")
 
