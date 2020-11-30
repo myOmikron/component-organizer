@@ -1,31 +1,14 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ path }}</title>
-    <style>
-        ul {
-            columns: 3;
-        }
-        .icon {
-            width: 50px;
-            height: auto;
-        }
-    </style>
-</head>
-<body>
-
+{% block body %}
 <ul>
     {% for id, name in containers %}
         <li>
             <a href="/browse/{{ id }}">
-                <img class="icon" src="{% static 'frontend/folder.svg' %}"> <br/>
+                <img class="icon" src="{% static 'img/folder.svg' %}" alt="Folder"> <br/>
                 {{ name }}
             </a>
         </li>
     {% endfor %}
 </ul>
-
-</body>
-</html>
+{% endblock %}
