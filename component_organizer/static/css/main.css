@@ -1,0 +1,16 @@
+
+.horizontal {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.item-box {
+    display: flex;
+    flex-direction: column;
+    width: 10vw;
+    justify-content: center;
+    align-items: center;
+    margin: 2vw;
+}
