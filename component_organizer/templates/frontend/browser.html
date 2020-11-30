@@ -1,12 +1,21 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block body %}
+<h1>{{ path }}</h1>
 <div class="horizontal">
     {% for id, name in containers %}
     <a href="/browse/{{ id }}">
         <div class="item-box">
             <img class="icon" src="{% static 'img/folder.svg' %}" alt="Folder"> <br/>
             {{ name }}
+        </div>
+    </a>
+    {% endfor %}
+    {% for item in items %}
+    <a href="">
+        <div class="item-box">
+            <img class="icon" src="{% static 'img/file.svg' %}" alt="File"> <br/>
+            {{ item }}
         </div>
     </a>
     {% endfor %}
