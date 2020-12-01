@@ -1,13 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block body %}
-<h1>
-    {% for name, id in id_path %}
-        <a href="/browse/{{ id }}">{{ name }}/</a>
-    {% endfor %}
-</h1>
-
-<div class="horizontal">
+    <h1>
+        {% for name, id in id_path %}<a href="/browse/{{ id }}">{{ name }}/</a>{% endfor %}
+    </h1>
+    <div class="horizontal">
     {% for id, name in containers %}
     <a href="/browse/{{ id }}">
         <div class="item-box">
