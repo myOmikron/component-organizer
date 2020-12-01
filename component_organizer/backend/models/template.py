@@ -1,6 +1,6 @@
 from django.db.models import FloatField, CharField, BooleanField
 
-from backend.base_models import AbstractItem
+from backend.models.base import AbstractItem
 from backend.helper import UnicodeEscape
 
 
