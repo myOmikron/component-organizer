@@ -1,23 +1,80 @@
 import os
+from typing import List, Tuple
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.core.validators import MinValueValidator
 
 
-class Category(models.Model):
+class _TreeNode(models.Model):
+
+    class Meta:
+        abstract = True
+
     name = models.CharField(default="", max_length=255)
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, blank=True, null=True)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, default=0)
+
+    def get_absolute_url(self) -> str:
+        """
+        The url where to find this object.
+
+        For example used in the admin page.
+        :return: url to object
+        :rtype: string
+        """
+        return f"/browse/{self.__class__.__name__.lower()}/{self.id}"
 
     @property
-    def path(self):
-        if self.parent:
-            return os.path.join(self.parent.path, self.name)
-        else:
+    def is_root(self) -> bool:
+        """
+        Is this the root container?
+
+        :return: whether this is the root container
+        :rtype: boolean
+        """
+        return self.parent == self
+
+    @property
+    def path(self) -> str:
+        """
+        Return the absolute path
+
+        :return: absolute path to container
+        :rtype: string
+        """
+        if self.is_root:
             return self.name
+        else:
+            return os.path.join(self.parent.path, self.name)
+
+    @property
+    def id_path(self) -> List[Tuple[str, int]]:
+        """
+        Return the absolute path in a more general way.
+
+        It is a list where each item represents a container on the path from root to target.
+        These items are tuples containing the containers' names and the ids.
+        :return: a generic absolute path to container
+        :rtype: list of (name, id)-tuples
+        """
+        if self.is_root:
+            return [(self.name, self.id)]
+        else:
+            return self.parent.id_path + [(self.name, self.id)]
 
     def __str__(self):
-        return self.name
+        if self.is_root:
+            return f"{self.__class__.__name__} Root"
+        else:
+            return f"{self.__class__.__name__} '{self.name}'"
+
+
+class Category(_TreeNode):
+    pass
+
+
+class Container(_TreeNode):
+    pass
 
 
 class KeyValuePair(models.Model):
@@ -26,35 +83,6 @@ class KeyValuePair(models.Model):
 
     def __str__(self):
         return f"{self.key}={self.value}"
-
-
-class Container(models.Model):
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, default=0)
-    name = models.CharField(max_length=255, default="")
-
-    @property
-    def is_root(self):
-        return self.parent == self
-
-    @property
-    def path(self):
-        if self.is_root:
-            return self.name
-        else:
-            return os.path.join(self.parent.path, self.name)
-
-    @property
-    def id_path(self):
-        if self.is_root:
-            return [(self.name, self.id)]
-        else:
-            return self.parent.id_path + [(self.name, self.id)]
-
-    def __str__(self):
-        if self.is_root:
-            return "Container Root"
-        else:
-            return f"Container '{self.name}'"
 
 
 class ItemLocation(models.Model):

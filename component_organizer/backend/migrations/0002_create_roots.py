@@ -3,9 +3,14 @@
 from django.db import migrations
 
 
-def create_root(apps, schema_editor):
+def create_roots(apps, schema_editor):
     Container = apps.get_model("backend", "Container")
     root, new = Container.objects.get_or_create(id=0, name="", parent_id=0)
+    if new:
+        root.save()
+
+    Category = apps.get_model("backend", "Category")
+    root, new = Category.objects.get_or_create(id=0, name="", parent_id=0)
     if new:
         root.save()
 
@@ -13,9 +18,9 @@ def create_root(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend', '0011_auto_20201201_0134'),
+        ('backend', '0001_initial'),
     ]
 
     operations = [
-        migrations.RunPython(create_root)
+        migrations.RunPython(create_roots)
     ]
