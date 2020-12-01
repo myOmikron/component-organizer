@@ -41,7 +41,7 @@ class ContainerForm(ModelForm):
         widgets = {"parent": HiddenInput()}
 
 
-class CreateView(CreateView):
+class CreateContainerView(CreateView):
     template_name = "frontend/container_form.html"
     form_class = ContainerForm
     success_url = "/browse/{parent_id}"
