@@ -1,4 +1,3 @@
-
 .horizontal {
     display: flex;
     flex-direction: row;
@@ -9,8 +8,26 @@
 .item-box {
     display: flex;
     flex-direction: column;
-    width: 10vw;
+    width: 8vw;
     justify-content: center;
     align-items: center;
     margin: 2vw;
+    padding: 1vw;
+    background-color: #22303c;
+}
+
+body {
+    background-color: #15202b;
+    color: #ffffff;
+    font-family: 'Roboto', sans-serif;
+}
+
+a {
+    text-decoration: None;
+    color: white;
+}
+
+img {
+    -webkit-filter: grayscale(100%) invert(100%); /* Safari 6.0 - 9.0 */
+    filter: grayscale(40%) invert(100%);
 }
