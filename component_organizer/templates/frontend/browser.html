@@ -1,7 +1,13 @@
 {% extends 'frontend/breadcrumps.html' %}
 {% load static %}
 {% block content %}
-    <div class="horizontal">
+<div class="horizontal">
+    <a href="/browse/{{ ct }}/new">
+        <div class="item-box">
+            <img class="icon" src="{% static 'img/new_folder.svg' %}" alt="File"> <br/>
+            Add new Container
+        </div>
+    </a>
     {% for id, name in containers %}
     <a href="/browse/{{ id }}">
         <div class="item-box">
@@ -18,11 +24,5 @@
         </div>
     </a>
     {% endfor %}
-    <a href="/browse/{{ ct }}/new">
-        <div class="item-box">
-            <img class="icon" src="{% static 'img/new_folder.svg' %}" alt="File"> <br/>
-            Add new Container
-        </div>
-    </a>
 </div>
 {% endblock %}
