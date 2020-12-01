@@ -10,29 +10,18 @@ class BrowserView(TemplateView):
     template_name = "frontend/browser.html"
 
     def get(self, request: HttpRequest, ct: int = 0, *args, **kwargs):
-        if ct == 0:
-            id_path = [("", "")]
+        container = get_object_or_404(Container, id=ct)
+        id_path = container.id_path
 
-            children = list(map(
-                lambda x: (x.id, x.name),
-                Container.objects.filter(parent_id=None).all()
-            ))
+        children = list(map(
+            lambda x: (x.id, x.name),
+            Container.objects.filter(parent=container).exclude(container=container).all()
+        ))
 
-            items = []
-
-        else:
-            container = get_object_or_404(Container, id=ct)
-            id_path = [("", "")] + container.id_path
-
-            children = list(map(
-                lambda x: (x.id, x.name),
-                Container.objects.filter(parent_id=ct).all()
-            ))
-
-            items = list(map(
-                lambda x: x.item,
-                ItemLocation.objects.filter(parent_id=ct).all()
-            ))
+        items = list(map(
+            lambda x: x.item,
+            ItemLocation.objects.filter(parent=container).all()
+        ))
 
         return render(
             request,
@@ -59,12 +48,10 @@ class CreateView(CreateView):
 
     def get(self, request: HttpRequest, ct: int = 0, *args, **kwargs):
         self.object = None  # Random line from BaseCreateView
-        self.initial = {"parent": ct if ct > 0 else None}
+        self.initial = {"parent": ct}
 
-        id_path = [("", "")]
-        if ct > 0:
-            container = get_object_or_404(Container, id=ct)
-            id_path.extend(container.id_path)
+        container = get_object_or_404(Container, id=ct)
+        id_path = container.id_path
 
         return self.render_to_response(self.get_context_data(parent=ct, id_path=id_path))
 
