@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block body %}
+<h1>
+    {% for name, id in id_path %}
+        <a href="/browse/{{ id }}">{{ name }}/</a>
+    {% endfor %}
+</h1>
+<h2>New Container:</h2>
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Create">
+</form>
+{% endblock %}
