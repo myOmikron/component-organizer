@@ -29,25 +29,32 @@ class KeyValuePair(models.Model):
 
 
 class Container(models.Model):
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, blank=True, null=True)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, default=0)
     name = models.CharField(max_length=255, default="")
 
     @property
+    def is_root(self):
+        return self.parent == self
+
+    @property
     def path(self):
-        if self.parent:
-            return os.path.join(self.parent.path, self.name)
-        else:
+        if self.is_root:
             return self.name
+        else:
+            return os.path.join(self.parent.path, self.name)
 
     @property
     def id_path(self):
-        if self.parent:
-            return self.parent.id_path + [(self.name, self.id)]
-        else:
+        if self.is_root:
             return [(self.name, self.id)]
+        else:
+            return self.parent.id_path + [(self.name, self.id)]
 
     def __str__(self):
-        return f"Container '{self.name}'"
+        if self.is_root:
+            return "Container Root"
+        else:
+            return f"Container '{self.name}'"
 
 
 class ItemLocation(models.Model):

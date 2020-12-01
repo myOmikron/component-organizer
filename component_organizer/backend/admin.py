@@ -16,7 +16,7 @@ class KeyValuePairAdmin(admin.ModelAdmin):
 
 @admin.register(Container)
 class ContainerModelAdmin(admin.ModelAdmin):
-    list_display = ("name", "path")
+    list_display = ("__str__", "name", "path")
 
 
 @admin.register(ItemLocation)
