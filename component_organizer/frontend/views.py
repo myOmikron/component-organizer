@@ -44,7 +44,7 @@ class ContainerForm(ModelForm):
 class CreateView(CreateView):
     template_name = "frontend/container_form.html"
     form_class = ContainerForm
-    success_url = "/browse/{id}"
+    success_url = "/browse/{parent_id}"
 
     def get(self, request: HttpRequest, ct: int = 0, *args, **kwargs):
         self.object = None  # Random line from BaseCreateView
