@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>
+    {% for name, id in id_path %}<a href="/browse/{{ id }}">{{ name }}/</a>{% endfor %}
+</h1>
+{% block content %}
+{% endblock %}
+{% endblock %}

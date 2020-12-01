@@ -1,9 +1,6 @@
-{% extends 'base.html' %}
+{% extends 'frontend/breadcrumps.html' %}
 {% load static %}
-{% block body %}
-    <h1>
-        {% for name, id in id_path %}<a href="/browse/{{ id }}">{{ name }}/</a>{% endfor %}
-    </h1>
+{% block content %}
     <div class="horizontal">
     {% for id, name in containers %}
     <a href="/browse/{{ id }}">
