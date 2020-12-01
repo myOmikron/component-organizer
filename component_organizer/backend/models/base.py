@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple
+from typing import List
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -25,6 +25,10 @@ class _TreeNode(models.Model):
         return f"/browse/{self.__class__.__name__.lower()}/{self.id}"
 
     @property
+    def url(self):
+        return self.get_absolute_url()
+
+    @property
     def is_root(self) -> bool:
         """
         Is this the root container?
@@ -48,19 +52,17 @@ class _TreeNode(models.Model):
             return os.path.join(self.parent.path, self.name)
 
     @property
-    def id_path(self) -> List[Tuple[str, int]]:
+    def obj_path(self) -> List["_TreeNode"]:
         """
-        Return the absolute path in a more general way.
+        Return the absolute path as list of objects
 
-        It is a list where each item represents a container on the path from root to target.
-        These items are tuples containing the containers' names and the ids.
-        :return: a generic absolute path to container
-        :rtype: list of (name, id)-tuples
+        :return: absolute path to container
+        :rtype: list of objects
         """
         if self.is_root:
-            return [(self.name, self.id)]
+            return [self]
         else:
-            return self.parent.id_path + [(self.name, self.id)]
+            return self.parent.obj_path + [self]
 
     def __str__(self):
         if self.is_root:

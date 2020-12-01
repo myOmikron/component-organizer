@@ -2,17 +2,17 @@
 {% load static %}
 {% block content %}
 <div class="horizontal">
-    <a href="/browse/{{ ct }}/new">
+    <a href="{{ container.url }}/new">
         <div class="item-box">
             <img class="icon" src="{% static 'img/new_folder.svg' %}" alt="File"> <br/>
             Add new Container
         </div>
     </a>
-    {% for id, name in containers %}
-    <a href="/browse/{{ id }}">
+    {% for ct in containers %}
+    <a href="{{ ct.url }}">
         <div class="item-box">
             <img class="icon" src="{% static 'img/folder.svg' %}" alt="Folder"> <br/>
-            {{ name }}
+            {{ ct.name }}
         </div>
     </a>
     {% endfor %}
@@ -20,7 +20,7 @@
     <a href="">
         <div class="item-box">
             <img class="icon" src="{% static 'img/file.svg' %}" alt="File"> <br/>
-            {{ item }}
+            {{ item.item }}
         </div>
     </a>
     {% endfor %}
