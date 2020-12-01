@@ -1,9 +1,13 @@
 {% extends 'frontend/breadcrumps.html' %}
 {% block content %}
-<h2>New Container:</h2>
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Create">
-</form>
+<div class="horizontal">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="container-form">
+            <h2>New Container:</h2>
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Create">
+        </div>
+    </form>
+</div>
 {% endblock %}
