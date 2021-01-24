@@ -1,9 +1,10 @@
 import os
 from typing import List
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
 
 class _TreeNode(models.Model):
@@ -90,11 +91,9 @@ class KeyValuePair(models.Model):
 class ItemLocation(models.Model):
     parent = models.ForeignKey("backend.Container", on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(validators=[MinValueValidator(1)], default=1)
-    _base_item = models.ForeignKey("backend.AbstractItem", on_delete=models.CASCADE)
-
-    @property
-    def item(self):
-        return self._base_item.sub_model
+    _item_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    _item_id = models.PositiveIntegerField()
+    item = GenericForeignKey("_item_type", "_item_id")
 
     def __str__(self):
         return f"{self.amount}x{self.item} in {self.parent}"
@@ -104,59 +103,29 @@ class AbstractItem(models.Model):
     """
     The base class for any item.
 
-    Just subclass it to create new item types and don't worry about the rest.
+    Subclass it to create new item types.
 
-    Shouldn't be instantiated, but subclassed instead.
     If you need a generic class to instantiate, use `UniqueItem`.
-
-
-    Design-Decisions
-    ----------------
-
-    The attributes `custom_values` and `category` are wrapped in properties
-    so that sub models don't have to first go to this class to access them.
     """
-    _custom_values = models.ManyToManyField(KeyValuePair, blank=True)
-    _category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
-    @property
-    def custom_values(self):
-        return self._custom_values
+    class Meta:
+        abstract = True
 
-    @custom_values.setter
-    def custom_values(self, value):
-        self._custom_values = value
+    custom_values = models.ManyToManyField(KeyValuePair, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
-    @property
-    def category(self):
-        return self._category
-
-    @category.setter
-    def category(self, value):
-        self._category = value
-
-    @property
-    def sub_model(self):
+    @staticmethod
+    def relation2location(query_name=None):
         """
-        Get the subclass view on the object for this base.
+        Create a relation field to ItemLocation.
 
-        When browsing the container tree you will find lots of ItemLocation.
-        Each contains one object of this class.
-
-        But this class itself is not very useful itself, you want to know which subclass it belongs to.
-        This property provides this subclass perspective on your object.
+        :param query_name: (Optional) required for reverse from ItemLocation an item
+                                      by convention it should be the item's table name
+        :type query_name: string
+        :return: relation to ItemLocation
+        :rtype: GenericRelation
         """
-        if not hasattr(self, "_sub_model"):
-            for field in self._meta.get_fields():
-                if not isinstance(field, models.OneToOneRel):
-                    continue
-                try:
-                    self._sub_model = getattr(self, field.name)
-                    break
-                except ObjectDoesNotExist:
-                    continue
-
-        return self._sub_model
+        return GenericRelation(ItemLocation, "_item_id", "_item_type", related_query_name=query_name)
 
 
 class UniqueItem(AbstractItem):
@@ -164,6 +133,7 @@ class UniqueItem(AbstractItem):
     Items where it's not worth it to create their own classes for because there are only a few of them.
     """
     name = models.CharField(max_length=255, default="")
+    location_set = AbstractItem.relation2location("uniqueitem")
 
     def __str__(self):
         return self.name
