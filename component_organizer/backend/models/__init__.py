@@ -1,2 +1,2 @@
+from backend.models.dict import *
 from backend.models.base import *
-from backend.models.template import *
