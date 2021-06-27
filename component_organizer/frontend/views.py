@@ -1,9 +1,49 @@
 from django.forms import ModelForm, HiddenInput
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView, CreateView
 
-from backend.models import Container, ItemLocation
+from backend.models import Container, ItemLocation, Item
+
+
+class ItemView(TemplateView):
+    template_name = "frontend/item.html"
+
+    def get(self, request: HttpRequest, *args, item: int = None, **kwargs):
+        try:
+            item: Item = Item.objects.get(id=item)
+        except Item.DoesNotExist:
+            raise Http404
+
+        return render(request=request, template_name=self.template_name, context={
+            "items": item.items()
+        })
+
+    def post(self, request: HttpRequest, *args, item: int = None, **kwargs):
+        try:
+            item: Item = Item.objects.get(id=item)
+        except Item.DoesNotExist:
+            raise Http404
+
+        for key, value in request.POST.items():
+            if not key.startswith("item_"):
+                continue
+            key = key[len("item_"):]
+
+            try:
+                value = int(value)
+            except ValueError:
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+
+            if key in item and item[key] == value:
+                continue
+            else:
+                item[key] = value
+
+        return HttpResponseRedirect(request.path)
 
 
 class BrowserView(TemplateView):
