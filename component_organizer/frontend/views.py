@@ -1,9 +1,11 @@
+from functools import reduce
+
 from django.forms import ModelForm, HiddenInput
 from django.http import HttpRequest, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView, CreateView
 
-from backend.models import Container, ItemLocation, Item
+from backend.models import Container, ItemLocation, Item, Dict
 
 
 class ItemView(TemplateView):
@@ -52,10 +54,31 @@ class ItemListView(TemplateView):
 
     def get(self, request: HttpRequest, *args, **kwargs):
         query = request.GET.get("query", None)
-        if query is None:
-            item_query = Item.objects.all()
-        else:
+        try:
             # TODO
+            # - use regex
+            # - more comparisons than =
+            # - or
+            queries = []
+            for query_piece in map(str.strip, query.split(",")):
+                key, value = query_piece.split("=")
+                key, value = key.strip(), value.strip()
+
+                try:
+                    value = int(value)
+                except ValueError:
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        pass
+
+                queries.append(
+                    Dict.KVP_MODELS[type(value)].objects
+                        .filter(key__value=key, value__value=value)
+                        .values_list("owner_id")
+                )
+            item_query = Item.objects.filter(id__in=reduce(lambda a, b: a.intersection(b), queries))
+        except:
             item_query = Item.objects.all()
 
         try:
@@ -68,6 +91,7 @@ class ItemListView(TemplateView):
         return render(request=request, template_name=self.template_name, context={
             "items": Item.populate_queryset(item_query[(page-1)*self.page_size:page*self.page_size]),
             "page": page,
+            "query": query,
         })
 
 
