@@ -46,6 +46,31 @@ class ItemView(TemplateView):
         return HttpResponseRedirect(request.path)
 
 
+class ItemListView(TemplateView):
+    template_name = "frontend/item_list.html"
+    page_size = 50
+
+    def get(self, request: HttpRequest, *args, **kwargs):
+        query = request.GET.get("query", None)
+        if query is None:
+            item_query = Item.objects.all()
+        else:
+            # TODO
+            item_query = Item.objects.all()
+
+        try:
+            page = int(request.GET.get("page", 1))
+            if page < 1:
+                page = 1
+        except ValueError:
+            page = 1
+
+        return render(request=request, template_name=self.template_name, context={
+            "items": Item.populate_queryset(item_query[(page-1)*self.page_size:page*self.page_size]),
+            "page": page,
+        })
+
+
 class BrowserView(TemplateView):
     template_name = "frontend/browser.html"
 

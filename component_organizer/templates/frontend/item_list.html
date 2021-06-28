@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="flex-vertical">
+    <form>
+        <label>
+            <input name="query">
+        </label>
+        <input type="submit" value="Search">
+    </form>
+    {% for item in items %}
+        <a href="{{ item.url }}">{{ item }}</a>
+    {% endfor %}
+</div>
+{% endblock %}

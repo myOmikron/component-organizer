@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% block body %}
     <form method="post">
-    {% csrf_token %}
-    <ul>
-        {% for key, value in items %}
-            <li>
-                <label for="{{ key }}">
-                    {{ key }}:
-                </label>
-                <input id="{{ key }}" name="item_{{ key }}" value="{{ value }}">
-            </li>
-        {% endfor %}
-    </ul>
-    <input type="submit" value="Save">
+        <div class="flex-vertical">
+            {% csrf_token %}
+            {% for key, value in items %}
+                <div>
+                    <label for="{{ key }}">
+                        {{ key }}:
+                    </label>
+                    <input id="{{ key }}" name="item_{{ key }}" value="{{ value }}">
+                </div>
+            {% endfor %}
+            <input type="submit" value="Save">
+        </div>
     </form>
 {% endblock %}

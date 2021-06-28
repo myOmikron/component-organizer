@@ -90,4 +90,10 @@ class ItemLocation(models.Model):
 
 
 class Item(Dict):
-    pass
+
+    def get_absolute_url(self):
+        return f"/item/{self.id}"
+
+    @property
+    def url(self):
+        return self.get_absolute_url()
