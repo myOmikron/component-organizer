@@ -8,8 +8,14 @@ from django.views.generic import TemplateView, CreateView
 from backend.models import Container, ItemLocation, Item, Dict
 
 
+class NewItemView(CreateView):
+    model = Item
+    template_name = "frontend/items/new.html"
+    fields = ["template", "category"]
+
+
 class ItemView(TemplateView):
-    template_name = "frontend/item.html"
+    template_name = "frontend/items/edit.html"
 
     def get(self, request: HttpRequest, *args, item: int = None, **kwargs):
         try:
@@ -61,7 +67,7 @@ class ItemView(TemplateView):
 
 
 class ItemListView(TemplateView):
-    template_name = "frontend/item_list.html"
+    template_name = "frontend/items/list.html"
     page_size = 50
 
     def get(self, request: HttpRequest, *args, **kwargs):

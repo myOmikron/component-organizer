@@ -67,9 +67,9 @@ class _TreeNode(models.Model):
 
     def __str__(self):
         if self.is_root:
-            return f"{self.__class__.__name__} Root"
+            return "Root"
         else:
-            return f"{self.__class__.__name__} '{self.name}'"
+            return self.name
 
 
 class Container(_TreeNode):
