@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 from typing import List
 
 from django.db import models
@@ -8,7 +9,6 @@ from backend.models.dict import Dict, StringValue
 
 
 class _TreeNode(models.Model):
-
     class Meta:
         abstract = True
 
@@ -105,7 +105,6 @@ class ItemLocation(models.Model):
 
 
 class Item(Dict):
-
     category = models.ForeignKey(Category, default=0, on_delete=models.CASCADE)
     template = models.ForeignKey(ItemTemplate, default=0, on_delete=models.CASCADE)
 
@@ -119,4 +118,8 @@ class Item(Dict):
     def __str__(self):
         if self._data is None:
             self.populate()
-        return self.template.name_format.format(data=self._data)
+
+        try:
+            return self.template.name_format.format(data=defaultdict(lambda: "undefined", **self._data))
+        except (LookupError, AttributeError):
+            return f"Invalid formatting string: '{self.template.name_format}'"
