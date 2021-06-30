@@ -18,8 +18,18 @@ class ItemView(TemplateView):
         except Item.DoesNotExist:
             raise Http404
 
+        template_attrs = dict((attr, "") for attr in item.template.get_fields())
+        additional_attrs = dict()
+        for key, value in item.items():
+            if key in template_attrs:
+                template_attrs[key] = value
+            else:
+                additional_attrs[key] = value
+
         return render(request=request, template_name=self.template_name, context={
-            "items": item.items()
+            "item": item,
+            "template_attrs": template_attrs.items(),
+            "additional_attrs": additional_attrs.items(),
         })
 
     def post(self, request: HttpRequest, *args, item: int = None, **kwargs):
@@ -29,22 +39,23 @@ class ItemView(TemplateView):
             raise Http404
 
         for key, value in request.POST.items():
-            if not key.startswith("item_"):
-                continue
-            key = key[len("item_"):]
+            if key.startswith("set_"):
+                key = key[len("set_"):]
 
-            try:
-                value = int(value)
-            except ValueError:
                 try:
                     value = float(value)
                 except ValueError:
                     pass
 
-            if key in item and item[key] == value:
-                continue
-            else:
-                item[key] = value
+                if key in item and item[key] == value:
+                    continue
+                else:
+                    item[key] = value
+
+            elif key.startswith("delete_"):
+                key = key[len("delete_"):]
+
+                del item[key]
 
         return HttpResponseRedirect(request.path)
 
@@ -55,7 +66,7 @@ class ItemListView(TemplateView):
 
     def get(self, request: HttpRequest, *args, **kwargs):
         # Create query
-        query = request.GET.get("query", None)
+        query = request.GET.get("query", "")
         try:
             # TODO
             # - use regex
