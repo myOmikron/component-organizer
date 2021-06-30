@@ -4,7 +4,7 @@ from typing import List
 from django.db import models
 from django.core.validators import MinValueValidator
 
-from backend.models.dict import Dict
+from backend.models.dict import Dict, StringValue
 
 
 class _TreeNode(models.Model):
@@ -72,10 +72,6 @@ class _TreeNode(models.Model):
             return f"{self.__class__.__name__} '{self.name}'"
 
 
-class Category(_TreeNode):
-    pass
-
-
 class Container(_TreeNode):
     pass
 
@@ -91,9 +87,29 @@ class ItemLocation(models.Model):
 
 class Item(Dict):
 
+    category = models.ForeignKey("backend.Category", default=0, on_delete=models.CASCADE)
+
     def get_absolute_url(self):
         return f"/item/{self.id}"
 
     @property
     def url(self):
         return self.get_absolute_url()
+
+    def __str__(self):
+        return self.category.name_template.format(**self._data)
+
+
+class Category(_TreeNode):
+    fields = models.ManyToManyField(StringValue)
+    name_template = models.CharField(max_length=255, default="", blank="")
+    """To get an item's name, this string will be formatted with the item's variables"""
+
+    def get_fields(self):
+        """
+        Return a list of fields an item of this category must have.
+        """
+        fields = list(map(lambda t: t[0], self.fields.values_list("value")))
+        if not self.is_root:
+            fields = self.parent.get_fields() + fields
+        return fields

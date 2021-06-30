@@ -14,6 +14,7 @@ class ItemView(TemplateView):
     def get(self, request: HttpRequest, *args, item: int = None, **kwargs):
         try:
             item: Item = Item.objects.get(id=item)
+            item.populate()
         except Item.DoesNotExist:
             raise Http404
 
@@ -53,6 +54,7 @@ class ItemListView(TemplateView):
     page_size = 50
 
     def get(self, request: HttpRequest, *args, **kwargs):
+        # Create query
         query = request.GET.get("query", None)
         try:
             # TODO
@@ -81,15 +83,18 @@ class ItemListView(TemplateView):
         except:
             item_query = Item.objects.all()
 
+        # Page query
         try:
             page = int(request.GET.get("page", 1))
             if page < 1:
                 page = 1
         except ValueError:
             page = 1
+        item_query = item_query[(page-1)*self.page_size:page*self.page_size]
 
+        # Output query
         return render(request=request, template_name=self.template_name, context={
-            "items": Item.populate_queryset(item_query[(page-1)*self.page_size:page*self.page_size]),
+            "items": Item.populate_queryset(item_query),
             "page": page,
             "query": query,
         })
