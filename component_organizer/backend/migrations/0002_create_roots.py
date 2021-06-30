@@ -5,12 +5,17 @@ from django.db import migrations
 
 def create_roots(apps, schema_editor):
     Container = apps.get_model("backend", "Container")
-    root, new = Container.objects.get_or_create(id=0, name="", parent_id=0)
+    root, new = Container.objects.get_or_create(id=0, name="/", parent_id=0)
     if new:
         root.save()
 
     Category = apps.get_model("backend", "Category")
-    root, new = Category.objects.get_or_create(id=0, name="", parent_id=0)
+    root, new = Category.objects.get_or_create(id=0, name="/", parent_id=0)
+    if new:
+        root.save()
+
+    ItemTemplate = apps.get_model("backend", "ItemTemplate")
+    root, new = ItemTemplate.objects.get_or_create(id=0, name="/", parent_id=0, name_format="Unspecified Item")
     if new:
         root.save()
 
