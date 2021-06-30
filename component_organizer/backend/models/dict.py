@@ -26,8 +26,8 @@ class StringValue(_SingleValue):
     value = models.CharField(max_length=255, default="", unique=True)
 
 
-class IntegerValue(_SingleValue):
-    value = models.IntegerField(default=0, unique=True)
+# class IntegerValue(_SingleValue):
+#     value = models.IntegerField(default=0, unique=True)
 
 
 class FloatValue(_SingleValue):
@@ -53,8 +53,8 @@ class StringVariable(_KeyValuePair):
     value = models.ForeignKey(StringValue, on_delete=models.CASCADE, related_name="variable")
 
 
-class IntegerVariable(_KeyValuePair):
-    value = models.ForeignKey(IntegerValue, on_delete=models.CASCADE)
+# class IntegerVariable(_KeyValuePair):
+#     value = models.ForeignKey(IntegerValue, on_delete=models.CASCADE)
 
 
 class FloatVariable(_KeyValuePair):
@@ -72,12 +72,12 @@ class Dict(models.Model):
 
     KVP_MODELS = {
         str: StringVariable,
-        int: IntegerVariable,
+        int: FloatVariable,
         float: FloatVariable,
     }
     VALUE_MODELS = {
         str: StringValue,
-        int: IntegerValue,
+        int: FloatVariable,
         float: FloatValue,
     }
 
