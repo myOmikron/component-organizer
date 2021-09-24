@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
-<div class="flex-vertical">
+<div>
     <a href="/item/new">Create new item</a>
     <form>
         <label>
@@ -8,8 +8,33 @@
         </label>
         <input type="submit" value="Search">
     </form>
-    {% for item in items %}
-        <a href="{{ item.url }}">{{ item }}</a>
-    {% endfor %}
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    Name
+                </th>
+                <th>
+                    #
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>
+                        <a href="{{ item.url }}">{{ item }}</a>
+                    </td>
+                    <td>
+                        {% if item.amount %}
+                            {{ item.amount }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

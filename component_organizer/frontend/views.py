@@ -1,5 +1,6 @@
 from functools import reduce
 
+from django.db.models import Sum
 from django.forms import ModelForm, HiddenInput
 from django.http import HttpRequest, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
@@ -99,6 +100,7 @@ class ItemListView(TemplateView):
             item_query = Item.objects.filter(id__in=reduce(lambda a, b: a.intersection(b), queries))
         except:
             item_query = Item.objects.all()
+        item_query = item_query.annotate(amount=Sum("itemlocation__amount"))
 
         # Page query
         try:
