@@ -37,7 +37,7 @@ class _TreeNode(models.Model):
         :return: whether this is the root container
         :rtype: boolean
         """
-        return self.parent == self
+        return self.parent_id == self.id
 
     @property
     def path(self) -> str:
@@ -63,7 +63,11 @@ class _TreeNode(models.Model):
         if self.is_root:
             return [self]
         else:
-            return self.parent.obj_path + [self]
+            parent = self.__class__.objects.select_related("parent").get(id=self.parent_id)
+            if parent.is_root:
+                return [parent, self]
+            else:
+                return parent.parent.obj_path + [parent, self]
 
     def __str__(self):
         if self.is_root:
