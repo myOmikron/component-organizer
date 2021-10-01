@@ -4,7 +4,6 @@ import ReactDOM from "../react-dom.js";
 const baseHost = window.location.protocol + "//" + window.location.host;
 const e = React.createElement;
 
-
 function getJson(url, method="GET") {
     return new Promise(((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -25,6 +24,16 @@ function getJson(url, method="GET") {
     }));
 }
 
+function TextInput(props) {
+    const {value, setValue, ...otherProps} = props;
+
+    return e("input", {
+        value,
+        onChange: (event) => {setValue(event.target.value);},
+        ...otherProps,
+    });
+}
+
 
 class EditItem extends React.Component {
 
@@ -40,6 +49,7 @@ class EditItem extends React.Component {
                 name: "Not loaded yet",
                 fields: []
             },
+            _toAdd: "",
         }
 
         const {itemId} = props;
@@ -53,24 +63,44 @@ class EditItem extends React.Component {
                 nonTempFields.push(key);
             }
         }
+        const setState = this.setState.bind(this);
 
         return e("div", {
             className: "flex-vertical",
         }, [
             e("h1", {}, this.state.template.name),
-            ...this.state.template.fields.map((key) => e("div", {}, [
+            ...this.state.template.fields.map((key) => e("div", {key}, [
                 e("label", {htmlFor: key}, key),
-                e("input", {id: key, name: "set_"+key, value: this.state.fields[key]})
+                e(TextInput, {
+                    id: key,
+                    value: this.state.fields[key],
+                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: value}}))}
+                }),
             ])),
             e("h2", {}, ["Additional Attributes"]),
-            ...nonTempFields.map((key) => e("div", {}, [
+            ...nonTempFields.map((key) => e("div", {key}, [
                 e("label", {htmlFor: key}, key),
-                e("input", {id: key, name: "set_"+key, value: this.state.fields[key]}),
-                e("button", {}, "Remove"),
+                e(TextInput, {
+                    id: key,
+                    value: this.state.fields[key],
+                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: value}}))}
+                }),
+                e("button", {
+                    onClick() {
+                        setState((state) => {
+                            const {[key]: toRemove, ...toKeep} = state.fields;
+                            return {fields: toKeep};
+                        });
+                    },
+                }, "Remove"),
             ])),
             e("div", {}, [
-                e("label", {}, e("input")),
-                e("button", {}, "Add"),
+                e("label", {}, e(TextInput, {value: this.state._toAdd, setValue(value) {setState({_toAdd: value});}})),
+                e("button", {
+                    onClick() {
+                        setState((state) => ({fields: {[state._toAdd]: "", ...state.fields}, _toAdd: ""}));
+                    },
+                }, "Add"),
             ]),
             e("button", {}, "Save"),
         ]);
