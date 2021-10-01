@@ -1,7 +1,6 @@
 import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
-const baseHost = window.location.protocol + "//" + window.location.host;
 const e = React.createElement;
 
 function getJson(url, method="GET", body) {
@@ -96,8 +95,10 @@ class EditItem extends React.Component {
             _toAdd: "",
         }
 
-        const {itemId} = props;
-        getJson(baseHost + "/api/item/" + itemId).then(this.setState.bind(this));
+        const baseHost = window.location.protocol + "//" + window.location.host;
+        const path = window.location.pathname.split("/");
+        this.apiEndpoint = baseHost + "/api/item/" + path[path.length-1];
+        getJson(this.apiEndpoint).then(this.setState.bind(this));
     }
 
     render() {
@@ -108,8 +109,6 @@ class EditItem extends React.Component {
             }
         }
         const setState = this.setState.bind(this);
-        const state = this.state;
-        const {itemId} = this.props;
 
         return e("div", {
             className: "flex-vertical",
@@ -149,8 +148,8 @@ class EditItem extends React.Component {
                 }, "Add"),
             ]),
             e("button", {
-                onClick() {
-                    getJson(baseHost + "/api/item/" + itemId, "put", {fields: state.fields})
+                onClick: function() {
+                    getJson(this.apiEndpoint, "put", {fields: this.state.fields})
                     .then(({success, result}) => {
                         if (success) {
                             setState(result);
@@ -158,10 +157,10 @@ class EditItem extends React.Component {
                             console.error("Couldn't save item");
                         }
                     });
-                }
+                }.bind(this),
             }, "Save"),
         ]);
     }
 }
 
-ReactDOM.render(React.createElement(EditItem, {itemId: 1}), document.getElementById("root"));
+ReactDOM.render(React.createElement(EditItem), document.getElementById("root"));
