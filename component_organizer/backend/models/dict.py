@@ -77,7 +77,7 @@ class Dict(models.Model):
     }
     VALUE_MODELS = {
         str: StringValue,
-        int: FloatVariable,
+        int: FloatValue,
         float: FloatValue,
     }
 
