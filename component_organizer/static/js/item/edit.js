@@ -4,11 +4,13 @@ import ReactDOM from "../react-dom.js";
 const baseHost = window.location.protocol + "//" + window.location.host;
 const e = React.createElement;
 
-function getJson(url, method="GET") {
+function getJson(url, method="GET", body) {
     return new Promise(((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.responseType = "json";
         xhr.open(method, url);
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("ContentType", "application/json");
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -20,7 +22,10 @@ function getJson(url, method="GET") {
             }
         }.bind(this);
 
-        xhr.send();
+        if (body === undefined)
+            xhr.send();
+        else
+            xhr.send(JSON.stringify(body));
     }));
 }
 
@@ -103,6 +108,8 @@ class EditItem extends React.Component {
             }
         }
         const setState = this.setState.bind(this);
+        const state = this.state;
+        const {itemId} = this.props;
 
         return e("div", {
             className: "flex-vertical",
@@ -141,7 +148,18 @@ class EditItem extends React.Component {
                     },
                 }, "Add"),
             ]),
-            e("button", {}, "Save"),
+            e("button", {
+                onClick() {
+                    getJson(baseHost + "/api/item/" + itemId, "put", {fields: state.fields})
+                    .then(({success, result}) => {
+                        if (success) {
+                            setState(result);
+                        } else {
+                            console.error("Couldn't save item");
+                        }
+                    });
+                }
+            }, "Save"),
         ]);
     }
 }

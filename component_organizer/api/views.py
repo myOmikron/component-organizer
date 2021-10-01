@@ -23,6 +23,7 @@ class ApiAuth(LoginRequiredMixin, View):
     pass
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ItemView(View):
 
     @staticmethod
@@ -56,7 +57,10 @@ class ItemView(View):
             item[key] = value
         item.save()
 
-        return self.item2dict(item)
+        return JsonResponse(
+            {"success": True, "result": self.item2dict(item)},
+            status=200
+        )
 
     def get(self, request, pk=None, *args, **kwargs):
         if pk is None:
@@ -89,12 +93,15 @@ class ItemView(View):
             for key, value in data["fields"].items():
                 item[key] = value
             current_fields = list(data["fields"].keys()) + item.template.get_fields()
-            for key in item.keys():
+            for key in list(item.keys()):
                 if key not in current_fields:
                     del item[key]
         item.save()
 
-        return self.item2dict(item)
+        return JsonResponse(
+            {"success": True, "result": self.item2dict(item)},
+            status=200
+        )
 
     def delete(self, request, *args, pk=None, **kwargs):
         try:
