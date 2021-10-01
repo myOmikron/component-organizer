@@ -34,6 +34,45 @@ function TextInput(props) {
     });
 }
 
+function format(string, kwargs) {
+    return string.replaceAll(/{+[^}]*}+/g, function(match) {
+        const leadingBrackets = match.match(/^{+/)[0].length;
+        const tailingBrackets = match.match(/}+$/)[0].length;
+        let result = match.substring(leadingBrackets, match.length-tailingBrackets);
+        if (leadingBrackets % 2 !== tailingBrackets % 2) {
+            console.error("Unbalanced brackets");
+        } else if (leadingBrackets % 2 !== 1) {
+            // nothing to do
+        } else {
+            // _2 would be the conversion value "s", "r", "a" which stand for str, repr, ascii
+            // since javascript doesn't have these functions just dump it
+            const [_1, fieldName, _2, formatSpec] = result.match(/^([^!:]+)(![^:]+)?(:.+)?$/);
+
+            // get the actual value
+            let value = kwargs;
+            const steps = fieldName.match(/(?:^[^.\[]+)|(?:\.\w+)|(?:\[\w+])/g);
+            for (let i = 0; i < steps.length; i++) {
+                let step = steps[i];
+                if (step[0] === ".") {
+                    step = step.substring(1);
+                } else if (step[0] === "[") {
+                    step = step.substring(1, step.length-1);
+                }
+                try {
+                    value = value[step];
+                } catch {
+                    console.error(`Can't get ${fieldName}`);
+                    value = "error";
+                    break;
+                }
+            }
+            result = value;
+
+            // TODO: format value
+        }
+        return "{".repeat(Math.floor(leadingBrackets / 2)) + result + "}".repeat(Math.floor(tailingBrackets / 2));
+    });
+}
 
 class EditItem extends React.Component {
 
@@ -68,7 +107,7 @@ class EditItem extends React.Component {
         return e("div", {
             className: "flex-vertical",
         }, [
-            e("h1", {}, this.state.template.name),
+            e("h1", {}, format(this.state.template.name, {data: this.state.fields})),
             ...this.state.template.fields.map((key) => e("div", {key}, [
                 e("label", {htmlFor: key}, key),
                 e(TextInput, {
