@@ -1,6 +1,8 @@
 import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
+import TextInput from "../textinput.js";
+
 const e = React.createElement;
 
 function getJson(url, method="GET", body) {
@@ -26,16 +28,6 @@ function getJson(url, method="GET", body) {
         else
             xhr.send(JSON.stringify(body));
     }));
-}
-
-function TextInput(props) {
-    const {value, setValue, ...otherProps} = props;
-
-    return e("input", {
-        value,
-        onChange: (event) => {setValue(event.target.value);},
-        ...otherProps,
-    });
 }
 
 function format(string, kwargs) {

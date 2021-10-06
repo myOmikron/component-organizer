@@ -1,40 +1,13 @@
 {% extends "base.html" %}
 {% block body %}
-<div>
-    <a href="/item/new">Create new item</a>
-    <form>
-        <label>
-            <input name="query" value="{{ query }}">
-        </label>
-        <input type="submit" value="Search">
-    </form>
-    <table>
-        <thead>
-            <tr>
-                <th>
-                    Name
-                </th>
-                <th>
-                    #
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-                <tr>
-                    <td>
-                        <a href="{{ item.url }}">{{ item }}</a>
-                    </td>
-                    <td>
-                        {% if item.amount %}
-                            {{ item.amount }}
-                        {% else %}
-                            0
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <script>
+    document.items = [
+        {% for item in items %}
+            {name: "{{ item }}", amount: {% if item.amount %}"{{ item.amount }}"{% else %}0{% endif %}, url: "{{ item.url }}", },
+        {% endfor %}
+    ];
+    </script>
+    <div id="root"></div>
+    {% load static %}
+    <script type="module" src="{% static 'js/list/list.js' %}"></script>
 {% endblock %}
