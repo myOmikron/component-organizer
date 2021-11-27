@@ -7,6 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.csrf import csrf_exempt
 
 from backend.models import StringValue, ItemTemplate, Item, Category
+from backend import queries
 
 
 def check_params(data: dict, parameters: list[tuple[str, type]]):
@@ -21,6 +22,13 @@ def check_params(data: dict, parameters: list[tuple[str, type]]):
 
 class ApiAuth(LoginRequiredMixin, View):
     pass
+
+
+class GetKeys(View):
+
+    def get(self, request, *args, **kwargs):
+        keys = queries.get_keys()  # TODO might want to limit number of keys
+        return JsonResponse([key.value for key in keys], safe=False)
 
 
 @method_decorator(csrf_exempt, name='dispatch')

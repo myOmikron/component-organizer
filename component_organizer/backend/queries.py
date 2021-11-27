@@ -6,7 +6,7 @@ from django.db.models import Count
 from backend.models import StringValue, Item, Dict
 
 
-def get_keys(at_least: int = 0):
+def get_keys(at_least: int = 1):
     """
     Get all StringValues used as keys and annotate them with how many times they are used.
 
