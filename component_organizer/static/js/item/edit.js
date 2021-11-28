@@ -5,6 +5,11 @@ import TextInput from "../textinput.js";
 
 const e = React.createElement;
 
+function parse(string) {
+    const number = parseFloat(string);
+    return isNaN(number) ? string : number;
+}
+
 function getJson(url, method="GET", body) {
     return new Promise(((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -111,7 +116,7 @@ class EditItem extends React.Component {
                 e(TextInput, {
                     id: key,
                     value: this.state.fields[key],
-                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: value}}))}
+                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
                 }),
             ])),
             e("h2", {}, ["Additional Attributes"]),
@@ -120,7 +125,7 @@ class EditItem extends React.Component {
                 e(TextInput, {
                     id: key,
                     value: this.state.fields[key],
-                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: value}}))}
+                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
                 }),
                 e("button", {
                     onClick() {
