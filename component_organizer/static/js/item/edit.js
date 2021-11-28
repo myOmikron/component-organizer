@@ -68,9 +68,9 @@ class EditItem extends React.Component {
             _toAdd: "",
         }
 
-        const baseHost = window.location.protocol + "//" + window.location.host;
+        this._addAttrInput = null;
         const path = window.location.pathname.split("/");
-        this.apiEndpoint = baseHost + "/api/item/" + path[path.length-1];
+        this.apiEndpoint = "/api/item/" + path[path.length-1];
         request(this.apiEndpoint).then(this.setState.bind(this));
     }
 
@@ -115,9 +115,19 @@ class EditItem extends React.Component {
                         },
                     }, "Remove")),
                 ])),
-                e("tr", {}, [
+                e("tr", {key: "_addAttr"}, [
                     e("td"),
-                    e("td", {}, e("label", {}, e(TextInput, {value: this.state._toAdd, setValue(value) {setState({_toAdd: value});}}))),
+                    e("td", {}, e("form", {
+                        onSubmit: function (event) {
+                            setState((state) => ({fields: {[state._toAdd]: "", ...state.fields}, _toAdd: ""}));
+                            this._addAttrInput.focus();
+                            event.preventDefault();
+                        }.bind(this),
+                    }, e("label", {}, e(TextInput, {
+                        value: this.state._toAdd,
+                        setValue(value) {setState({_toAdd: value});},
+                        reference: function (element) {this._addAttrInput = element;}.bind(this),
+                    })))),
                     e("td", {}, e("button", {
                         onClick() {
                             setState((state) => ({fields: {[state._toAdd]: "", ...state.fields}, _toAdd: ""}));
