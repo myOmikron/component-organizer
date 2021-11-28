@@ -15,7 +15,7 @@ class ItemList extends React.Component {
         this.state = {
             query: tempQuery ? decodeURIComponent(tempQuery[1].replace(/\+/g, ' ')) : "",
             commonKeys: [],
-            suggestions: null,
+            suggestions: [],
             suggestionIndex: -1,
             showSuggestions: false,
         }
@@ -42,13 +42,18 @@ class ItemList extends React.Component {
         }
     }
 
-    suggestKey() {
+    suggestKey(state) {
         let {key, value} = this.currentQuery;
         if (value !== null) {
-            return null
+            return [];
         }
         key = key.toLowerCase();
-        return this.state.commonKeys.filter((commonKey) => commonKey.toLowerCase().startsWith(key));
+        const {suggestionIndex} = state;
+        const suggestions = state.commonKeys.filter((commonKey) => commonKey.toLowerCase().startsWith(key));
+        return {suggestions,
+                showSuggestions: true,
+                suggestionIndex: suggestionIndex >= suggestions.length ? suggestions.length - 1 : suggestionIndex,
+        };
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -58,7 +63,7 @@ class ItemList extends React.Component {
             }
             this.suggestPromise = new Promise(function (resolve) {
                 this.suggestResolve = resolve;
-                this.setState({suggestions: this.suggestKey()});
+                this.setState(this.suggestKey.bind(this));
             }.bind(this));
         }
     }
@@ -66,17 +71,28 @@ class ItemList extends React.Component {
     complete() {
         const {key, value} = this.currentQuery;
         const {suggestions, suggestionIndex, query} = this.state;
-        if (value !== null) return;
+        if (value !== null || suggestionIndex < 0) return false;
         const suggestion = suggestions[suggestionIndex];
-        this.setState({query: query.substr(0, query.length - key.length) + suggestion});
-        this.queryInput.focus();
+        const newQuery = query.substr(0, query.length - key.length) + suggestion;
+        if (newQuery === query) {
+            return false;
+        } else {
+            this.setState({query: newQuery, showSuggestions: false});
+            this.queryInput.focus();
+            return true;
+        }
     }
 
     render() {
         const setState = this.setState.bind(this);
+        const complete = this.complete.bind(this);
+        const setIndex = function (delta) {
+            setState((state) => ({suggestionIndex: (state.suggestionIndex+delta)%state.suggestions.length}));
+        }
+        const {showSuggestions, suggestions} = this.state;
 
         return e("div", {}, [
-            this.state.showSuggestions && this.state.suggestions !== null ?  e("div", {
+            showSuggestions && suggestions.length > 0 ?  e("div", {
                 style: {
                     position: "fixed",
                     left: this.queryInput.offsetLeft + "px",
@@ -85,7 +101,7 @@ class ItemList extends React.Component {
                     border: "1px solid",
                     margin: "5px",
                 }
-            }, this.state.suggestions.map((key, index) => e("div", {
+            }, suggestions.map((key, index) => e("div", {
                 style: {
                     padding: "2px",
                     background: index === this.state.suggestionIndex ? "#1f2f3f" : "",
@@ -100,6 +116,27 @@ class ItemList extends React.Component {
                     reference: function (element) {this.queryInput = element;}.bind(this),
                     name: "query",
                     value: this.state.query,
+                    onKeyDown(event) {
+                        if (showSuggestions) {
+                            const {key} = event;
+                            if (key === "ArrowDown")
+                                setIndex(+1);
+                            else if (key === "ArrowUp")
+                                setIndex(-1);
+                            else if (key === "Tab") {
+                                if (suggestions.length > 1)
+                                    setIndex(+1);
+                                else
+                                    complete();
+                                event.preventDefault();
+                            }
+                            else if (key === "Enter") {
+                                if (complete()) {
+                                    event.preventDefault();
+                                }
+                            }
+                        }
+                    },
                     onFocus() {setState({showSuggestions: true});},
                     onBlur() {setState({showSuggestions: false});},
                     setValue(value) {setState({query: value});},
