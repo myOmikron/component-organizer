@@ -7,7 +7,7 @@ import TextInput from "../textinput.js";
 const e = React.createElement;
 
 function parse(string) {
-    const number = parseFloat(string);
+    const number = parseFloat(string.match(/^[+-]?\d*(?:\.\d+)?(?:e[+-]?\d+)?$/));
     return isNaN(number) ? string : number;
 }
 
