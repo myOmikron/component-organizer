@@ -87,38 +87,43 @@ class EditItem extends React.Component {
             className: "flex-vertical",
         }, [
             e("h1", {}, format(this.state.template.name, {data: this.state.fields})),
-            ...this.state.template.fields.map((key) => e("div", {key}, [
-                e("label", {htmlFor: key}, key),
-                e(TextInput, {
-                    id: key,
-                    value: this.state.fields[key],
-                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
-                }),
-            ])),
-            e("h2", {}, ["Additional Attributes"]),
-            ...nonTempFields.map((key) => e("div", {key}, [
-                e("label", {htmlFor: key}, key),
-                e(TextInput, {
-                    id: key,
-                    value: this.state.fields[key],
-                    setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
-                }),
-                e("button", {
-                    onClick() {
-                        setState((state) => {
-                            const {[key]: toRemove, ...toKeep} = state.fields;
-                            return {fields: toKeep};
-                        });
-                    },
-                }, "Remove"),
-            ])),
-            e("div", {}, [
-                e("label", {}, e(TextInput, {value: this.state._toAdd, setValue(value) {setState({_toAdd: value});}})),
-                e("button", {
-                    onClick() {
-                        setState((state) => ({fields: {[state._toAdd]: "", ...state.fields}, _toAdd: ""}));
-                    },
-                }, "Add"),
+            e("table", {}, [
+                ...this.state.template.fields.map((key) => e("tr", {key}, [
+                    e("td", {}, e("label", {htmlFor: key}, key)),
+                    e("td", {}, e(TextInput, {
+                        id: key,
+                        value: this.state.fields[key],
+                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
+                    })),
+                ])),
+            ]),
+            e("h2", {}, "Additional Attributes"),
+            e("table", {}, [
+                ...nonTempFields.map((key) => e("tr", {key}, [
+                    e("td", {}, e("label", {htmlFor: key}, key)),
+                    e("td", {}, e(TextInput, {
+                        id: key,
+                        value: this.state.fields[key],
+                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
+                    })),
+                    e("td", {}, e("button", {
+                        onClick() {
+                            setState((state) => {
+                                const {[key]: toRemove, ...toKeep} = state.fields;
+                                return {fields: toKeep};
+                            });
+                        },
+                    }, "Remove")),
+                ])),
+                e("tr", {}, [
+                    e("td"),
+                    e("td", {}, e("label", {}, e(TextInput, {value: this.state._toAdd, setValue(value) {setState({_toAdd: value});}}))),
+                    e("td", {}, e("button", {
+                        onClick() {
+                            setState((state) => ({fields: {[state._toAdd]: "", ...state.fields}, _toAdd: ""}));
+                        },
+                    }, "Add")),
+                ]),
             ]),
             e("button", {
                 onClick: function() {
