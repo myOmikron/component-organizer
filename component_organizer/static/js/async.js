@@ -1,12 +1,20 @@
-export function request(url, method = "GET", type = "json") {
+export function request(url, method = "GET", type = "json", body = "") {
     return new Promise(function (resolve, reject) {
         if (url.startsWith("/")) {
             const {host, protocol} = window.location;
             url = protocol + "//" + host + url;
         }
+
         const xhr = new XMLHttpRequest();
         xhr.open(method, url);
         xhr.responseType = type;
+
+        if (type === "json") {
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("ContentType", "application/json");
+            body = JSON.stringify(body);
+        }
+
         xhr.onload = function (event) {
             if (xhr.status === 200) {
                 resolve(xhr.response);
@@ -15,7 +23,8 @@ export function request(url, method = "GET", type = "json") {
                 reject(`${xhr.status}: ${xhr.statusText}`);
             }
         };
-        xhr.send();
+
+        xhr.send(body);
     });
 }
 

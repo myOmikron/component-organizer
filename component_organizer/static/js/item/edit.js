@@ -1,6 +1,7 @@
 import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
+import {request} from "../async.js";
 import TextInput from "../textinput.js";
 
 const e = React.createElement;
@@ -8,31 +9,6 @@ const e = React.createElement;
 function parse(string) {
     const number = parseFloat(string);
     return isNaN(number) ? string : number;
-}
-
-function getJson(url, method="GET", body) {
-    return new Promise(((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.responseType = "json";
-        xhr.open(method, url);
-        xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("ContentType", "application/json");
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                try {
-                    resolve(xhr.response);
-                } catch (e) {
-                    reject(e.toString());
-                }
-            }
-        }.bind(this);
-
-        if (body === undefined)
-            xhr.send();
-        else
-            xhr.send(JSON.stringify(body));
-    }));
 }
 
 function format(string, kwargs) {
@@ -95,7 +71,7 @@ class EditItem extends React.Component {
         const baseHost = window.location.protocol + "//" + window.location.host;
         const path = window.location.pathname.split("/");
         this.apiEndpoint = baseHost + "/api/item/" + path[path.length-1];
-        getJson(this.apiEndpoint).then(this.setState.bind(this));
+        request(this.apiEndpoint).then(this.setState.bind(this));
     }
 
     render() {
@@ -146,7 +122,7 @@ class EditItem extends React.Component {
             ]),
             e("button", {
                 onClick: function() {
-                    getJson(this.apiEndpoint, "put", {fields: this.state.fields})
+                    request(this.apiEndpoint, "PUT", "json", {fields: this.state.fields})
                     .then(({success, result}) => {
                         if (success) {
                             setState(result);
