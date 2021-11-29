@@ -11,13 +11,17 @@ class ItemList extends React.Component {
     constructor(props) {
         super(props);
 
-        const tempQuery = window.location.search.match(/[?&]query=([^&]+)/);
+        let tempQuery = window.location.search.match(/[?&]query=([^&]+)/);
+        tempQuery = tempQuery ? decodeURIComponent(tempQuery[1].replace(/\+/g, ' ')) : "";
         this.state = {
-            query: tempQuery ? decodeURIComponent(tempQuery[1].replace(/\+/g, ' ')) : "",
+            query: "",
+            queryKey: "",
+            queryValue: null, // might be null, when a key is currently entered into query
             commonKeys: [],
-            suggestions: [],
+            suggestions: null, // is only null at start and array of strings after first change to query
             suggestionIndex: -1,
             showSuggestions: false,
+            ...this.setQuery(tempQuery), // populate query, queryKey, queryValue using the http GET query
         }
 
         // request the common keys
@@ -27,57 +31,64 @@ class ItemList extends React.Component {
 
         // reference to the <input> for search queries
         this.queryInput = null;
-        this.suggestResolve = null;
-        this.suggestPromise = null;
     }
 
-    get currentQuery() {
-        const queries = this.state.query.split(/ *(?<!\\), */);
-        const query = queries[queries.length-1];
-        const keyValue = query.split(/ *(?:=|<=|>=|<|>) */)
-        return {
-            query,
-            key: keyValue[0],
-            value: keyValue.length > 1 ? keyValue[1] : null,
-        }
-    }
-
-    suggestKey(state) {
-        let {key, value} = this.currentQuery;
-        if (value !== null) {
-            return [];
-        }
-        key = key.toLowerCase();
-        const {suggestionIndex} = state;
-        const suggestions = state.commonKeys.filter((commonKey) => commonKey.toLowerCase().startsWith(key));
-        return {suggestions,
-                showSuggestions: true,
-                suggestionIndex: suggestionIndex >= suggestions.length ? suggestions.length - 1 : suggestionIndex,
-        };
+    setQuery(query) {
+        const queries = query.split(/ *(?<!\\), */);
+        const keyValue = queries[queries.length-1].split(/ *(?:=|<=|>=|<|>) */);
+        return {query, queryKey: keyValue[0], queryValue: keyValue.length > 1 ? keyValue[1] : null};
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (prevState.query !== this.state.query) {
-            if (this.suggestResolve !== null) {
-                this.suggestResolve();
+        if (this.state.query !== prevState.query) {
+            // Get the old/new value currently entered in the query and the set of their possible suggestions
+            // (Basically select whether a key or a value is entered right now)
+            let oldValue, newValue, filterSet;
+            if (this.state.queryValue === null) {
+                oldValue = prevState.queryKey;
+                newValue = this.state.queryKey;
+                filterSet = this.state.commonKeys;
+            } else {
+                oldValue = prevState.queryValue;
+                newValue = this.state.queryValue;
+                filterSet = ["a1", "b2", "c3"];  // get actual values for key
             }
-            this.suggestPromise = new Promise(function (resolve) {
-                this.suggestResolve = resolve;
-                this.setState(this.suggestKey.bind(this));
-            }.bind(this));
+
+            // Exit if nothing changed
+            if (oldValue === newValue) return;
+            // Reduce filterSet if possible
+            else if (this.state.suggestions !== null && newValue.startsWith(oldValue)) {
+                filterSet = this.state.suggestions;
+            }
+
+            // Filter and set new suggestions
+            newValue = newValue.toLowerCase();
+            const {suggestionIndex} = this.state;
+            const suggestions = filterSet.filter((commonValue) => commonValue.toLowerCase().startsWith(newValue));
+            this.setState({
+                suggestions,
+                showSuggestions: true,
+                suggestionIndex: suggestionIndex >= suggestions.length ? suggestions.length - 1 : suggestionIndex,
+            });
         }
     }
 
     complete() {
-        const {key, value} = this.currentQuery;
-        const {suggestions, suggestionIndex, query} = this.state;
-        if (value !== null || suggestionIndex < 0) return false;
+        const {suggestions, suggestionIndex, query, queryKey, queryValue} = this.state;
+        if (suggestionIndex < 0) return false;
         const suggestion = suggestions[suggestionIndex];
-        const newQuery = query.substr(0, query.length - key.length) + suggestion;
+
+        let newQuery;
+        if (queryValue !== null) {
+            newQuery = query.substr(0, query.length - queryValue.length) + suggestion;
+        } else {
+            newQuery = query.substr(0, query.length - queryKey.length) + suggestion;
+        }
+
         if (newQuery === query) {
             return false;
         } else {
-            this.setState({query: newQuery, showSuggestions: false});
+            this.setState({showSuggestions: false, ...this.setQuery(newQuery)});
             this.queryInput.focus();
             return true;
         }
@@ -139,7 +150,7 @@ class ItemList extends React.Component {
                     },
                     onFocus() {setState({showSuggestions: true});},
                     onBlur() {setState({showSuggestions: false});},
-                    setValue(value) {setState({query: value});},
+                    setValue: function(value) {this.setState(this.setQuery(value));}.bind(this),
                 })),
                 e("input", {type: "submit", value: "Search"})
             ]),
