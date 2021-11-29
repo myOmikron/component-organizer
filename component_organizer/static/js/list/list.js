@@ -1,7 +1,7 @@
 import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
-import TextInput from "../textinput.js";
+import {AutoComplete} from "../textinput.js";
 import {request} from "../async.js";
 
 const e = React.createElement;
@@ -29,9 +29,6 @@ class ItemList extends React.Component {
         request("/api/common_keys").then(function (commonKeys) {
             this.setState({commonKeys,});
         }.bind(this));
-
-        // reference to the <input> for search queries
-        this.queryInput = null;
     }
 
     setQuery(query) {
@@ -108,7 +105,6 @@ class ItemList extends React.Component {
             return false;
         } else {
             this.setState({showSuggestions: false, ...this.setQuery(newQuery)});
-            this.queryInput.focus();
             return true;
         }
     }
@@ -116,61 +112,20 @@ class ItemList extends React.Component {
     render() {
         const setState = this.setState.bind(this);
         const complete = this.complete.bind(this);
-        const setIndex = function (delta) {
-            setState((state) => ({suggestionIndex: (state.suggestionIndex+delta)%state.suggestions.length}));
-        }
-        const {showSuggestions, suggestions} = this.state;
+        const {suggestions} = this.state;
 
         return e("div", {}, [
-            showSuggestions && suggestions && suggestions.length > 0 ?  e("div", {
-                style: {
-                    position: "fixed",
-                    left: this.queryInput.offsetLeft + "px",
-                    top: this.queryInput.offsetTop + this.queryInput.offsetHeight + "px",
-                    background: "#15202b",
-                    border: "1px solid",
-                    margin: "5px",
-                }
-            }, suggestions.map((key, index) => e("div", {
-                style: {
-                    padding: "2px",
-                    background: index === this.state.suggestionIndex ? "#1f2f3f" : "",
-                    cursor: "pointer",
-                },
-                onMouseEnter() {setState({suggestionIndex: index})},
-                onMouseDown: this.complete.bind(this),
-            }, key))) : null,
             e("a", {href: "/item/new"}, "Create new item"),
             e("form", {}, [
-                e("label", {}, e(TextInput, {
-                    reference: function (element) {this.queryInput = element;}.bind(this),
+                e(AutoComplete, {
                     name: "query",
                     value: this.state.query,
-                    onKeyDown(event) {
-                        if (showSuggestions) {
-                            const {key} = event;
-                            if (key === "ArrowDown")
-                                setIndex(+1);
-                            else if (key === "ArrowUp")
-                                setIndex(-1);
-                            else if (key === "Tab") {
-                                if (suggestions.length > 1)
-                                    setIndex(+1);
-                                else
-                                    complete();
-                                event.preventDefault();
-                            }
-                            else if (key === "Enter") {
-                                if (complete()) {
-                                    event.preventDefault();
-                                }
-                            }
-                        }
-                    },
-                    onFocus() {setState({showSuggestions: true});},
-                    onBlur() {setState({showSuggestions: false});},
                     setValue: function(value) {this.setState(this.setQuery(value));}.bind(this),
-                })),
+                    options: suggestions,
+                    index: this.state.suggestionIndex,
+                    setIndex(index) {setState({suggestionIndex: index});},
+                    complete,
+                }),
                 e("input", {type: "submit", value: "Search"})
             ]),
             e("table", {}, [
