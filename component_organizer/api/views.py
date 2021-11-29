@@ -31,6 +31,14 @@ class GetKeys(View):
         return JsonResponse([key.value for key in keys], safe=False)
 
 
+class GetValues(View):
+
+    def get(self, request, key: str = "", *args, **kwargs):
+        values = queries.get_values(key)  # TODO might want to limit number of values
+        values.sort(key=lambda v: v.uses, reverse=True)
+        return JsonResponse([value.value for value in values], safe=False)
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class ItemView(View):
 

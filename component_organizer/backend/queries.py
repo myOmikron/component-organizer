@@ -19,7 +19,28 @@ def get_keys(at_least: int = 1):
         annotations[f"amount_{type_.__name__}"] = Count(f"{model.__name__.lower()}__key")
     annotations["amount_total"] = sum(annotations.values())
 
-    return StringValue.objects.annotate(**annotations).filter(amount_total__gte=at_least).order_by("amount_total").all()
+    return StringValue.objects.annotate(**annotations) \
+                              .filter(amount_total__gte=at_least) \
+                              .order_by("-amount_total", "value").all()
+
+
+def get_values(key: str, at_least: int = 1):
+    """
+    Get all ...Values stored under the given key and annotate them with how often they are used.
+
+    :param key: key to get values for
+    :type key: str
+    :param at_least: how often has a StringValue to be used as key to show up (default: 1)
+    :type at_least: int
+    :return: annotated list of StringValues, FloatValues and so on
+    """
+    values = []
+    for type_, kvp in Dict.KVP_MODELS.items():
+        val = Dict.VALUE_MODELS[type_]
+        values += val.objects.filter(variable__in=kvp.objects.filter(key__value=key)) \
+                             .annotate(uses=Count("variable")) \
+                             .filter(uses__gte=at_least)
+    return values
 
 
 _separator = re.compile(r" *(?<!\\), *")

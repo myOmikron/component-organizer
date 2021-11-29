@@ -9,4 +9,5 @@ urlpatterns = [
     path("item/<int:pk>", ItemView.as_view(http_method_names=["get", "put", "delete"])),
     path("item", ItemView.as_view(http_method_names=["get", "post"])),
     path("common_keys", GetKeys.as_view(http_method_names=["get"])),
+    path("common_values/<str:key>", GetValues.as_view(http_method_names=["get"])),
 ]

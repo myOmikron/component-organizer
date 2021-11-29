@@ -54,11 +54,11 @@ class StringVariable(_KeyValuePair):
 
 
 # class IntegerVariable(_KeyValuePair):
-#     value = models.ForeignKey(IntegerValue, on_delete=models.CASCADE)
+#     value = models.ForeignKey(IntegerValue, on_delete=models.CASCADE, related_name="variable")
 
 
 class FloatVariable(_KeyValuePair):
-    value = models.ForeignKey(FloatValue, on_delete=models.CASCADE)
+    value = models.ForeignKey(FloatValue, on_delete=models.CASCADE, related_name="variable")
 
 
 # ---------- #

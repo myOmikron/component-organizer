@@ -18,6 +18,7 @@ class ItemList extends React.Component {
             queryKey: "",
             queryValue: null, // might be null, when a key is currently entered into query
             commonKeys: [],
+            commonValues: {}, // map from key to array of values
             suggestions: null, // is only null at start and array of strings after first change to query
             suggestionIndex: -1,
             showSuggestions: false,
@@ -40,7 +41,8 @@ class ItemList extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (this.state.query !== prevState.query) {
+        const gotNewValues = this.state.commonValues !== prevState.commonValues;
+        if (gotNewValues || this.state.query !== prevState.query) {
             // Get the old/new value currently entered in the query and the set of their possible suggestions
             // (Basically select whether a key or a value is entered right now)
             let oldValue, newValue, filterSet;
@@ -49,16 +51,33 @@ class ItemList extends React.Component {
                 newValue = this.state.queryKey;
                 filterSet = this.state.commonKeys;
             } else {
+                const {queryKey} = this.state;
                 oldValue = prevState.queryValue;
                 newValue = this.state.queryValue;
-                filterSet = ["a1", "b2", "c3"];  // get actual values for key
+                filterSet = this.state.commonValues[queryKey];
+                if (!filterSet) {
+                    filterSet = [];
+                    request("/api/common_values/"+queryKey).then(function (commonValues) {
+                        // Save a bit of memory by not saving nonexistent keys
+                        if (commonValues.length === 0) return;
+
+                        this.setState((state) => ({
+                            commonValues: {
+                                ...state.commonValues,
+                                [queryKey]: commonValues.map((value) => "" + value),
+                            },
+                        }));
+                    }.bind(this));
+                }
             }
 
-            // Exit if nothing changed
-            if (oldValue === newValue) return;
-            // Reduce filterSet if possible
-            else if (this.state.suggestions !== null && newValue.startsWith(oldValue)) {
-                filterSet = this.state.suggestions;
+            if (!gotNewValues) {
+                // Exit if nothing changed
+                if (oldValue === newValue) return;
+                // Reduce filterSet if possible
+                else if (this.state.suggestions !== null && newValue.startsWith(oldValue)) {
+                    filterSet = this.state.suggestions;
+                }
             }
 
             // Filter and set new suggestions
@@ -103,7 +122,7 @@ class ItemList extends React.Component {
         const {showSuggestions, suggestions} = this.state;
 
         return e("div", {}, [
-            showSuggestions && suggestions.length > 0 ?  e("div", {
+            showSuggestions && suggestions && suggestions.length > 0 ?  e("div", {
                 style: {
                     position: "fixed",
                     left: this.queryInput.offsetLeft + "px",
