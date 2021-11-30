@@ -119,12 +119,15 @@ class ItemList extends React.Component {
             e("form", {}, [
                 e(AutoComplete, {
                     name: "query",
+                    focused: this.state.showSuggestions,
                     value: this.state.query,
                     setValue: function(value) {this.setState(this.setQuery(value));}.bind(this),
                     options: suggestions,
                     index: this.state.suggestionIndex,
                     setIndex(index) {setState({suggestionIndex: index});},
                     complete,
+                    onFocus() {setState({showSuggestions: true})},
+                    onBlur() {setState({showSuggestions: false})},
                 }),
                 e("input", {type: "submit", value: "Search"})
             ]),

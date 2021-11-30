@@ -21,9 +21,8 @@ export default function TextInput(props) {
 }
 
 export function AutoComplete(props) {
-    const {key, complete, options, index, setIndex, ...otherProps} = props;
+    const {key, focused, complete, options, index, setIndex, ...otherProps} = props;
     const input = React.useRef(null);
-    const [focused, setFocused] = React.useState(true);
     function updateIndex(delta) {
         setIndex(modulo(index + delta + 1, options.length + 1) - 1);
     }
@@ -55,8 +54,6 @@ export function AutoComplete(props) {
                     }
                 }
             },
-            onFocus() {setFocused(true);},
-            onBlur() {setFocused(false);},
             ...otherProps,
         }),
         input && focused && options && options.length > 0 ?  e("div", {

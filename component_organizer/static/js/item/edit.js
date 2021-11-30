@@ -2,12 +2,12 @@ import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
 import {request} from "../async.js";
-import TextInput from "../textinput.js";
+import TextInput, {AutoComplete} from "../textinput.js";
 
 const e = React.createElement;
 
 function parse(string) {
-    const number = parseFloat(string.match(/^[+-]?\d*(?:\.\d+)?(?:e[+-]?\d+)?$/));
+    const number = parseFloat(("" + string).match(/^[+-]?\d*(?:\.\d+)?(?:e[+-]?\d+)?$/));
     return isNaN(number) ? string : number;
 }
 
@@ -51,6 +51,48 @@ function format(string, kwargs) {
     });
 }
 
+function LazyAutocomplete(props) {
+    const {url, value, setValue, ...otherProps} = props;
+    const [index, setIndex] = React.useState(-1);
+    const [focused, setFocused] = React.useState(false);
+    const [active, setActive] = React.useState(false);  // has the input been focus on (at least once)
+    const [options, setOptions] = React.useState(null); // all options to choose from
+    const [filteredOptions, setFilteredOptions] = React.useState([]); // options which still match current value
+
+    React.useEffect(function() {
+        if (!active && focused) {
+            setActive(true);
+        }
+    }, [focused]);
+    React.useEffect(function() {
+        if (active) {
+            request(url).then(function (options) {setOptions(options);})
+        }
+    }, [url, active]);
+    React.useEffect(function () {
+        if (options !== null) {
+            const lowerValue = ("" + value).toLowerCase();
+            setFilteredOptions(options.filter((option) => ("" + option).toLowerCase().startsWith(lowerValue)));
+        }
+    }, [options, value]);
+
+    function complete() {
+        if (index < 0 || index >= filteredOptions.length) return;
+        setValue(filteredOptions[index]);
+    }
+
+    return e(AutoComplete, {
+        focused,
+        complete,
+        options: filteredOptions,
+        index, setIndex,
+        value, setValue,
+        onFocus() {setFocused(true);},
+        onBlur() {setFocused(false);},
+        ...otherProps,
+    });
+}
+
 class EditItem extends React.Component {
 
     constructor(props) {
@@ -90,8 +132,9 @@ class EditItem extends React.Component {
             e("table", {}, [
                 ...this.state.template.fields.map((key) => e("tr", {key}, [
                     e("td", {}, e("label", {htmlFor: key}, key)),
-                    e("td", {}, e(TextInput, {
+                    e("td", {}, e(LazyAutocomplete, {
                         id: key,
+                        url: "/api/common_values/" + key,
                         value: this.state.fields[key],
                         setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
                     })),
@@ -101,8 +144,9 @@ class EditItem extends React.Component {
             e("table", {}, [
                 ...nonTempFields.map((key) => e("tr", {key}, [
                     e("td", {}, e("label", {htmlFor: key}, key)),
-                    e("td", {}, e(TextInput, {
+                    e("td", {}, e(LazyAutocomplete, {
                         id: key,
+                        url: "/api/common_values/" + key,
                         value: this.state.fields[key],
                         setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
                     })),
@@ -123,7 +167,8 @@ class EditItem extends React.Component {
                             this._addAttrInput.focus();
                             event.preventDefault();
                         }.bind(this),
-                    }, e("label", {}, e(TextInput, {
+                    }, e("label", {}, e(LazyAutocomplete, {
+                        url: "/api/common_keys",
                         value: this.state._toAdd,
                         setValue(value) {setState({_toAdd: value});},
                         reference: function (element) {this._addAttrInput = element;}.bind(this),
