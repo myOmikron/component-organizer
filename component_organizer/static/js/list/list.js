@@ -6,6 +6,10 @@ import {request} from "../async.js";
 
 const e = React.createElement;
 
+function min(a, b) {
+    return a <= b ? a : b;
+}
+
 class ItemList extends React.Component {
 
     constructor(props) {
@@ -17,6 +21,7 @@ class ItemList extends React.Component {
             query: "",
             queryKey: "",
             queryValue: null, // might be null, when a key is currently entered into query
+            queryReplace: [0, 0],
             commonKeys: [],
             commonValues: {}, // map from key to array of values
             suggestions: null, // is only null at start and array of strings after first change to query
@@ -29,12 +34,52 @@ class ItemList extends React.Component {
         request("/api/common_keys").then(function (commonKeys) {
             this.setState({commonKeys,});
         }.bind(this));
+
+        this.queryInput = React.createRef();
     }
 
     setQuery(query) {
-        const queries = query.split(/ *(?<!\\), */);
-        const keyValue = queries[queries.length-1].split(/ *(?:=|<=|>=|<|>) */);
-        return {query, queryKey: keyValue[0], queryValue: keyValue.length > 1 ? keyValue[1] : null};
+        // index of the character which the cursor is in front of
+        const cursor = this.queryInput && this.queryInput.current ? this.queryInput.current.selectionStart : query.length;
+
+        let strippedQuery = query;  // query reduced to the key-value-statement the cursor is in
+        let strippedCursor = cursor;  // position of cursor in strippedQuery
+        let strippedPosition = [0, query.length];  // position of strippedQuery in original query
+        let separator;
+        while ((separator = strippedQuery.match(/(?<!\\),/d)) !== null) {
+            const [start, end] = separator.indices[0];
+            if (strippedCursor <= start) {
+                strippedQuery = strippedQuery.substring(0, start);
+                strippedPosition[1] = strippedPosition[0] + start;
+                break;
+            } else if (strippedCursor < end) {
+                console.error("cursor in seperator");  // TODO how to handle this case?
+                break;
+            } else {
+                strippedQuery = strippedQuery.substring(end, strippedQuery.length);
+                strippedPosition[0] += end;
+                strippedCursor -= end;
+            }
+        }
+
+        let queryKey = strippedQuery.trim();
+        let queryValue = null;
+        let queryReplace = strippedPosition;
+
+        const comparator = strippedQuery.match(/(?:=|<=|>=|<|>)/d);
+        if (comparator) {
+            const [start, end] = comparator.indices[0];
+            queryKey = strippedQuery.substring(0, start).trim();
+            if (strippedCursor <= start) {
+                queryReplace = [strippedPosition[0], strippedPosition[0] + start];
+            } else if (strippedCursor < end) {
+                console.error("cursor in comparator");  // TODO how to handle this case?
+            } else {
+                queryValue = strippedQuery.substring(end, strippedQuery.length).trim();
+                queryReplace = [strippedPosition[0] + end, strippedPosition[1]];
+            }
+        }
+        return {query, queryKey, queryValue, queryReplace};
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -90,16 +135,12 @@ class ItemList extends React.Component {
     }
 
     complete() {
-        const {suggestions, suggestionIndex, query, queryKey, queryValue} = this.state;
+        const {suggestions, suggestionIndex, query, queryReplace} = this.state;
         if (suggestionIndex < 0) return false;
-        const suggestion = suggestions[suggestionIndex];
 
-        let newQuery;
-        if (queryValue !== null) {
-            newQuery = query.substr(0, query.length - queryValue.length) + suggestion;
-        } else {
-            newQuery = query.substr(0, query.length - queryKey.length) + suggestion;
-        }
+        const newQuery = query.substring(0, queryReplace[0])
+                       + suggestions[suggestionIndex]
+                       + query.substring(queryReplace[1], query.length);
 
         if (newQuery === query) {
             return false;
@@ -119,9 +160,10 @@ class ItemList extends React.Component {
             e("form", {}, [
                 e(AutoComplete, {
                     name: "query",
+                    reference: this.queryInput,
                     focused: this.state.showSuggestions,
                     value: this.state.query,
-                    setValue: function(value) {this.setState(this.setQuery(value));}.bind(this),
+                    setValue: function(value) {this.setState(this.setQuery.bind(this)(value));}.bind(this),
                     options: suggestions,
                     index: this.state.suggestionIndex,
                     setIndex(index) {setState({suggestionIndex: index});},

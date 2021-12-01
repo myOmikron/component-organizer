@@ -21,8 +21,9 @@ export default function TextInput(props) {
 }
 
 export function AutoComplete(props) {
-    const {key, focused, complete, options, index, setIndex, ...otherProps} = props;
-    const input = React.useRef(null);
+    const {key, focused, complete, options, index, setIndex, reference, ...otherProps} = props;
+    const internalReference = React.useRef(null);
+    const input = reference ? reference : internalReference;
     function updateIndex(delta) {
         setIndex(modulo(index + delta + 1, options.length + 1) - 1);
     }

@@ -63,7 +63,6 @@ def filter_items(string, queryset=None):
 
     parsed_queries = []
     raw_queries = _separator.split(string)
-    print(raw_queries)
     for query in raw_queries:
         try:
             key, op, value = _query.match(query).groups()
