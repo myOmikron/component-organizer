@@ -1,3 +1,4 @@
+import json
 from functools import reduce
 
 from django.db.models import Sum
@@ -86,11 +87,24 @@ class ItemListView(TemplateView):
             page = 1
         item_query = item_query[(page-1)*self.page_size:page*self.page_size]
 
+        items = []
+        for item in Item.populate_queryset(item_query):
+            items.append({"name": str(item), "amount": 0, "url": item.url, "fields": item._data})
+
+        keys = set()
+        for KeyValuePair in Item.KVP_MODELS.values():
+            for var in KeyValuePair.objects.filter(owner__in=item_query).select_related("key"):
+                keys.add(var.key.value)
+        keys = list(keys)
+
         # Output query
         return render(request=request, template_name=self.template_name, context={
-            "items": Item.populate_queryset(item_query),
             "page": page,
             "query": query,
+            "props": repr(json.dumps({
+                "keys": keys,
+                "items": items,
+            })),
         })
 
 

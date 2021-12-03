@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 {% block body %}
     <script>
-    document.items = [
-        {% for item in items %}
-            {name: "{{ item }}", amount: {% if item.amount %}"{{ item.amount }}"{% else %}0{% endif %}, url: "{{ item.url }}", },
-        {% endfor %}
-    ];
+        document.props = JSON.parse({{ props | safe }});
     </script>
     <div id="root"></div>
     {% load static %}

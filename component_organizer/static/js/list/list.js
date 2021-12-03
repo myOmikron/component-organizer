@@ -175,12 +175,14 @@ class ItemList extends React.Component {
             ]),
             e("table", {}, [
                 e("thead", {}, e("tr", {}, [
-                    e("th", {}, "Name"),
+                    e("th"),
+                    ...this.props.keys.map((key) => e("th", {}, key)),
                     e("th", {}, "#"),
                 ])),
-                e("tbody", {}, document.items.map(({name, url, amount}) => (
+                e("tbody", {}, this.props.items.map(({name, url, amount, fields}) => (
                     e("tr", {}, [
-                        e("td", {}, e("a", {href: url}, name)),
+                        e("td", {}, e("b", {}, e("a", {href: url}, name))),
+                        ...this.props.keys.map((key) => e("td", {}, fields[key] || "---")),
                         e("td", {}, amount),
                     ])
                 ))),
@@ -189,4 +191,4 @@ class ItemList extends React.Component {
     }
 }
 
-ReactDOM.render(React.createElement(ItemList), document.getElementById("root"));
+ReactDOM.render(React.createElement(ItemList, document.props), document.getElementById("root"));
