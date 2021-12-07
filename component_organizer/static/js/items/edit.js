@@ -2,7 +2,7 @@ import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
 import {request} from "../async.js";
-import TextInput, {AutoComplete} from "../textinput.js";
+import {AutoComplete} from "../textinput.js";
 
 const e = React.createElement;
 
@@ -108,6 +108,7 @@ class EditItem extends React.Component {
                 fields: []
             },
             _toAdd: "",
+            _reloading: false,
         }
 
         this._addAttrInput = null;
@@ -182,16 +183,18 @@ class EditItem extends React.Component {
             ]),
             e("button", {
                 onClick: function() {
+                    setState({_reloading: true});
                     request(this.apiEndpoint, "PUT", "json", {fields: this.state.fields})
                     .then(({success, result}) => {
                         if (success) {
-                            setState(result);
+                            setState({_reloading: false, ...result});
                         } else {
                             console.error("Couldn't save item");
                         }
                     });
                 }.bind(this),
             }, "Save"),
+            this.state._reloading ? "Reloading..." : null,
         ]);
     }
 }

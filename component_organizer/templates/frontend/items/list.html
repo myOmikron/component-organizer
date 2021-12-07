@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% load static %}
 {% block body %}
+    <link rel="stylesheet" href="{% static "css/items/list.css" %}">
+    <script type="module" src="{% static 'js/items/list.js' %}"></script>
+    <div id="root"></div>
     <script>
         document.props = JSON.parse({{ props | safe }});
     </script>
-    <div id="root"></div>
-    {% load static %}
-    <script type="module" src="{% static 'js/list/list.js' %}"></script>
 {% endblock %}

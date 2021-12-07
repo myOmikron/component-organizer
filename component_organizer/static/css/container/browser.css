@@ -1,0 +1,15 @@
+.item-box {
+    display: flex;
+    flex-direction: column;
+    width: 8vw;
+    justify-content: center;
+    align-items: center;
+    margin: 2vw;
+    padding: 1vw;
+    background-color: #22303c;
+}
+
+img {
+    -webkit-filter: grayscale(100%) invert(100%); /* Safari 6.0 - 9.0 */
+    filter: contrast(60%) invert(100%);
+}

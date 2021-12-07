@@ -1,6 +1,8 @@
 {% extends 'frontend/container/breadcrumps.html' %}
+{% load static %}
 {% block content %}
-<div class="horizontal">
+<link rel="stylesheet" href="{% static "css/container/container_form.css" %}">
+<div class="flex-horizontal">
     <form method="POST" enctype="multipart/form-data">
         <div class="container-form">
             <h2>New Container:</h2>
