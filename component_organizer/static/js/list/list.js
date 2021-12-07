@@ -6,10 +6,6 @@ import {request} from "../async.js";
 
 const e = React.createElement;
 
-function min(a, b) {
-    return a <= b ? a : b;
-}
-
 class ItemList extends React.Component {
 
     constructor(props) {
@@ -46,15 +42,15 @@ class ItemList extends React.Component {
         let strippedCursor = cursor;  // position of cursor in strippedQuery
         let strippedPosition = [0, query.length];  // position of strippedQuery in original query
         let separator;
-        while ((separator = strippedQuery.match(/(?<!\\),/d)) !== null) {
+        while ((separator = strippedQuery.match(/(?<!\\)[&|()]/d)) !== null) {
             const [start, end] = separator.indices[0];
             if (strippedCursor <= start) {
                 strippedQuery = strippedQuery.substring(0, start);
                 strippedPosition[1] = strippedPosition[0] + start;
                 break;
-            } else if (strippedCursor < end) {
+            /*} else if (strippedCursor < end) {
                 console.error("cursor in seperator");  // TODO how to handle this case?
-                break;
+                break;*/
             } else {
                 strippedQuery = strippedQuery.substring(end, strippedQuery.length);
                 strippedPosition[0] += end;
