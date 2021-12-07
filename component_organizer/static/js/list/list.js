@@ -159,11 +159,13 @@ class ItemList extends React.Component {
 
         const shownKeys = this.props.keys.filter((key) => this.state.keys[key]);
 
-        return e("div", {}, [
-            e("a", {href: "/item/new"}, "Create new item"),
+        return e("div", {
+            className: "flex-vertical",
+        }, [
             e("form", {}, [
                 e(AutoComplete, {
                     name: "query",
+                    className: "searchbar",
                     reference: this.queryInput,
                     focused: this.state.showSuggestions,
                     value: this.state.query,
@@ -177,31 +179,41 @@ class ItemList extends React.Component {
                 }),
                 e("input", {type: "submit", value: "Search"})
             ]),
-            e("table", {}, [
-                e("thead", {}, e("tr", {}, [
-                    e("th"),
-                    ...shownKeys.map((key) => e("th", {}, key)),
-                    e("th", {}, "#"),
-                ])),
-                e("tbody", {}, this.props.items.map(({name, url, amount, fields}) => (
-                    e("tr", {}, [
-                        e("td", {}, e("b", {}, e("a", {href: url}, name))),
-                        ...shownKeys.map((key) => e("td", {}, fields[key] || "---")),
-                        e("td", {}, amount),
-                    ])
-                ))),
+            e("div", {className: "flex-horizontal"}, [
+                e("table", {
+                    className: "itemtable",
+                }, [
+                    e("thead", {}, e("tr", {}, [
+                        e("th"),
+                        ...shownKeys.map((key) => e("th", {}, key)),
+                        e("th", {}, "#"),
+                    ])),
+                    e("tbody", {}, this.props.items.map(({name, url, amount, fields}) => (
+                        e("tr", {}, [
+                            e("td", {}, e("b", {}, e("a", {href: url}, name))),
+                            ...shownKeys.map((key) => e("td", {}, fields[key] || "---")),
+                            e("td", {}, amount),
+                        ])
+                    ))),
+                ]),
+                e("div", {
+                    className: "flex-vertical",
+                    style: {alignItems: "start"},
+                }, this.props.keys.map((key) => e("div", {
+                    style: {cursor: "pointer"},
+                    onClick() {
+                        setState((state) => ({
+                            keys: {
+                                ...state.keys,
+                                [key]: !state.keys[key],
+                            }
+                        }));
+                    },
+                }, [e("span", {
+                    style: {color: this.state.keys[key] ? "white" : "gray"},
+                }, "\u2022 "), key]))),
             ]),
-            e("p", {}, this.props.keys.map((key) => e("span", {
-                style: {cursor: "pointer"},
-                onClick() {
-                    setState((state) => ({
-                        keys: {
-                            ...state.keys,
-                            [key]: !state.keys[key],
-                        }
-                    }));
-                },
-            }, key))),
+            e("form", {action: "/item/new"}, e("button", {type: "submit"}, "Create new item")),
         ]);
     }
 }

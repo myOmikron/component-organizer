@@ -1,4 +1,4 @@
-.horizontal {
+.flex-horizontal {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -12,6 +12,19 @@
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
+}
+
+.searchbar {
+    width: 50em;
+}
+
+.itemtable {
+    border-collapse: collapse;
+    margin: 3em;
+}
+.itemtable td, .itemtable th {
+    border-right: gray 1px solid;
+    padding: 0.1em 0.5em;
 }
 
 .item-box {

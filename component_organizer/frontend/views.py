@@ -1,5 +1,4 @@
 import json
-from functools import reduce
 
 from django.db.models import Sum
 from django.forms import ModelForm, HiddenInput
@@ -114,15 +113,15 @@ class ItemListView(TemplateView):
                 "queriedKeys": list(queried_keys),
                 "commonKeys": list(common_keys),
                 "keys": list(queried_keys)
-                      + list(common_keys.intersection(common_keys))
-                      + list(keys.intersection(queried_keys).intersection(common_keys)),
+                      + list(common_keys.difference(queried_keys))
+                      + list(keys.difference(queried_keys, common_keys)),
                 "items": items,
             })),
         })
 
 
 class BrowserView(TemplateView):
-    template_name = "frontend/browser.html"
+    template_name = "frontend/container/browser.html"
 
     def get(self, request: HttpRequest, ct: int = 0, *args, **kwargs):
         container = get_object_or_404(Container, id=ct)
@@ -147,7 +146,7 @@ class ContainerForm(ModelForm):
 
 
 class CreateContainerView(CreateView):
-    template_name = "frontend/container_form.html"
+    template_name = "frontend/container/container_form.html"
     form_class = ContainerForm
     success_url = "/browse/container/{parent_id}"
 
