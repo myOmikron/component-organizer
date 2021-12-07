@@ -11,9 +11,14 @@ class ItemList extends React.Component {
     constructor(props) {
         super(props);
 
+        const keys = {};
+        this.props.keys.map((key) => {keys[key] = false;});
+        this.props.queriedKeys.map((key) => {keys[key] = true;});
+
         let tempQuery = window.location.search.match(/[?&]query=([^&]+)/);
         tempQuery = tempQuery ? decodeURIComponent(tempQuery[1].replace(/\+/g, ' ')) : "";
         this.state = {
+            keys,
             query: "",
             queryKey: "",
             queryValue: null, // might be null, when a key is currently entered into query
@@ -151,6 +156,8 @@ class ItemList extends React.Component {
         const complete = this.complete.bind(this);
         const {suggestions} = this.state;
 
+        const shownKeys = this.props.keys.filter((key) => this.state.keys[key]);
+
         return e("div", {}, [
             e("a", {href: "/item/new"}, "Create new item"),
             e("form", {}, [
@@ -172,17 +179,28 @@ class ItemList extends React.Component {
             e("table", {}, [
                 e("thead", {}, e("tr", {}, [
                     e("th"),
-                    ...this.props.keys.map((key) => e("th", {}, key)),
+                    ...shownKeys.map((key) => e("th", {}, key)),
                     e("th", {}, "#"),
                 ])),
                 e("tbody", {}, this.props.items.map(({name, url, amount, fields}) => (
                     e("tr", {}, [
                         e("td", {}, e("b", {}, e("a", {href: url}, name))),
-                        ...this.props.keys.map((key) => e("td", {}, fields[key] || "---")),
+                        ...shownKeys.map((key) => e("td", {}, fields[key] || "---")),
                         e("td", {}, amount),
                     ])
                 ))),
             ]),
+            e("p", {}, this.props.keys.map((key) => e("span", {
+                style: {cursor: "pointer"},
+                onClick() {
+                    setState((state) => ({
+                        keys: {
+                            ...state.keys,
+                            [key]: !state.keys[key],
+                        }
+                    }));
+                },
+            }, key))),
         ]);
     }
 }

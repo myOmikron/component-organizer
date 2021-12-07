@@ -76,7 +76,8 @@ class ItemListView(TemplateView):
     def get(self, request: HttpRequest, *args, **kwargs):
         # Create query
         query = request.GET.get("query", "")
-        item_query = filter_items(query).annotate(amount=Sum("itemlocation__amount"))
+        queried_keys = set()
+        item_query = filter_items(query, queried_keys=queried_keys).annotate(amount=Sum("itemlocation__amount"))
 
         # Page query
         try:
@@ -87,22 +88,24 @@ class ItemListView(TemplateView):
             page = 1
         item_query = item_query[(page-1)*self.page_size:page*self.page_size]
 
+        # Format items for react
         items = []
         for item in Item.populate_queryset(item_query):
             items.append({"name": str(item), "amount": 0, "url": item.url, "fields": item._data})
 
+        # Retrieve all keys used by any of the items
         keys = set()
         for KeyValuePair in Item.KVP_MODELS.values():
             for var in KeyValuePair.objects.filter(owner__in=item_query).select_related("key"):
                 keys.add(var.key.value)
-        keys = list(keys)
 
         # Output query
         return render(request=request, template_name=self.template_name, context={
             "page": page,
             "query": query,
             "props": repr(json.dumps({
-                "keys": keys,
+                "queriedKeys": list(queried_keys),
+                "keys": list(keys),
                 "items": items,
             })),
         })

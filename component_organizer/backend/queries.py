@@ -43,7 +43,7 @@ def get_values(key: str, at_least: int = 1):
     return list(values)
 
 
-def filter_items(string: str, queryset: QuerySet = None) -> QuerySet:
+def filter_items(string: str, /, queryset: QuerySet = None, queried_keys: set = None) -> QuerySet:
     """
     Parse an item query into a Queryset
 
@@ -51,6 +51,8 @@ def filter_items(string: str, queryset: QuerySet = None) -> QuerySet:
     :type string: str
     :param queryset: An optional queryset to base the resulting one on
     :type queryset: QuerySet
+    :param queried_keys: A optional set the keys used in the query are put in
+    :type queried_keys: empty set
     :return: queryset represented by the query string
     :rtype: QuerySet
     """
@@ -58,7 +60,7 @@ def filter_items(string: str, queryset: QuerySet = None) -> QuerySet:
         queryset = Item.objects.all()
     string = string.strip()
     if string:
-        return queryset.filter(id__in=_parse_bracket(iter(string)))
+        return queryset.filter(id__in=_parse_bracket(iter(string), queried_keys))
     else:
         return queryset.all()
 
@@ -76,12 +78,14 @@ _logic_operators = {
 }
 
 
-def _parse_lookup(string: str) -> QuerySet:
+def _parse_lookup(string: str, queried_keys: set = None) -> QuerySet:
     """
     Parse a key-comparator-value string into a QuerySet of item ids.
 
     :param string: something like "  Foo = bar" (leading and trailing whitespaces are stripped)
     :type string: str
+    :param queried_keys: A optional set the keys used in the query are put in
+    :type queried_keys: set
     :return: QuerySet of matching items' ids
     :rtype: QuerySet of tuples with a single int
     """
@@ -99,18 +103,22 @@ def _parse_lookup(string: str) -> QuerySet:
     except ValueError:
         pass
 
+    if queried_keys is not None:
+        queried_keys.add(key)
     return Dict.KVP_MODELS[type(value)].objects \
         .filter(key__value=key, **{f"value__value{_comparison_operators[op]}": value}) \
         .values_list("owner_id")
 
 
-def _parse_bracket(string_iter: Iterator[str]) -> QuerySet:
+def _parse_bracket(string_iter: Iterator[str], queried_keys: set = None) -> QuerySet:
     """
     Parse an item query from a string iterator.
     This goes through the string calls `_parse_lookup` or itself recursively and combines the result using and/or.
 
     :param string_iter: iterator over an item query to parse
     :type string_iter: Iterator[str]
+    :param queried_keys: A optional set the keys used in the query are put in
+    :type queried_keys: set
     :return: QuerySet of matching items' ids
     :rtype: QuerySet of tuples with a single int
     """
@@ -130,12 +138,12 @@ def _parse_bracket(string_iter: Iterator[str]) -> QuerySet:
         elif char == "\\":
             escaped = True
         elif char == "(":
-            query = _parse_bracket(string_iter)
+            query = _parse_bracket(string_iter, queried_keys)
         elif char == ")":
             break
         elif char in _logic_operators:
             if query is None:
-                query = _parse_lookup(lookup)
+                query = _parse_lookup(lookup, queried_keys)
             lookup = ""
             result = combinator(result, query)
             query = None
@@ -144,5 +152,5 @@ def _parse_bracket(string_iter: Iterator[str]) -> QuerySet:
             lookup += char
 
     if query is None:
-        query = _parse_lookup(lookup)
+        query = _parse_lookup(lookup, queried_keys)
     return combinator(result, query)
