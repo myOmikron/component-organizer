@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from backend.models import StringValue, ItemTemplate, Item, Category
 from backend import queries
+from backend.queries import filter_items
 
 
 def check_params(data: dict, parameters: list[tuple[str, type]]):
@@ -80,8 +81,11 @@ class ItemView(View):
 
     def get(self, request, pk=None, *args, **kwargs):
         if pk is None:
+            items = Item.objects.all()
+            if "query" in request.GET:
+                items = filter_items(request.GET.get("query"))
             return JsonResponse(
-                [self.item2dict(item, False) for item in Item.objects.all()],
+                [self.item2dict(item, False) for item in items],
                 status=200, safe=False
             )
         else:
