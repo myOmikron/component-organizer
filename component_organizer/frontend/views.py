@@ -86,7 +86,7 @@ class ItemListView(TemplateView):
                 page = 1
         except ValueError:
             page = 1
-        item_query = item_query[(page-1)*self.page_size:page*self.page_size]
+        item_query = item_query[(page - 1) * self.page_size:page * self.page_size]
 
         # Format items for react
         items = []
@@ -94,10 +94,17 @@ class ItemListView(TemplateView):
             items.append({"name": str(item), "amount": 0, "url": item.url, "fields": item._data})
 
         # Retrieve all keys used by any of the items
+        # and all keys all items have in common
+        # TODO: formulate this as an efficient query
         keys = set()
-        for KeyValuePair in Item.KVP_MODELS.values():
-            for var in KeyValuePair.objects.filter(owner__in=item_query).select_related("key"):
-                keys.add(var.key.value)
+        common_keys = None
+        for item in items:
+            item_keys = set(item["fields"].keys())
+            keys.update(item_keys)
+            if common_keys is None:
+                common_keys = item_keys
+            else:
+                common_keys.intersection_update(item_keys)
 
         # Output query
         return render(request=request, template_name=self.template_name, context={
@@ -105,7 +112,10 @@ class ItemListView(TemplateView):
             "query": query,
             "props": repr(json.dumps({
                 "queriedKeys": list(queried_keys),
-                "keys": list(keys),
+                "commonKeys": list(common_keys),
+                "keys": list(queried_keys)
+                      + list(common_keys.intersection(common_keys))
+                      + list(keys.intersection(queried_keys).intersection(common_keys)),
                 "items": items,
             })),
         })

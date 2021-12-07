@@ -12,8 +12,9 @@ class ItemList extends React.Component {
         super(props);
 
         const keys = {};
-        this.props.keys.map((key) => {keys[key] = false;});
         this.props.queriedKeys.map((key) => {keys[key] = true;});
+        this.props.commonKeys.map((key) => {keys[key] = true;});
+        this.props.keys.map((key) => {keys[key] = keys[key] | false;});
 
         let tempQuery = window.location.search.match(/[?&]query=([^&]+)/);
         tempQuery = tempQuery ? decodeURIComponent(tempQuery[1].replace(/\+/g, ' ')) : "";
