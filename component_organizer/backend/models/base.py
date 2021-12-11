@@ -94,6 +94,7 @@ class _TreeNode(models.Model):
                 node.parent = nodes[node.parent_id]
                 nodes[node.parent_id].children.append(node)
 
+        self.children = direct
         return direct
 
     def __str__(self):

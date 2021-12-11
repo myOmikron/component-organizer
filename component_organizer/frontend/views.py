@@ -28,7 +28,7 @@ class ItemView(TemplateView):
 
 
 class ItemListView(TemplateView):
-    template_name = "frontend/items/list.html"
+    template_name = "frontend/react.html"
     page_size = 50
 
     def get(self, request: HttpRequest, *args, **kwargs):
@@ -66,8 +66,8 @@ class ItemListView(TemplateView):
 
         # Output query
         return render(request=request, template_name=self.template_name, context={
-            "page": page,
-            "query": query,
+            "js_file": "js/items/list.js",
+            "css_file": "css/items/list.js",
             "props": repr(json.dumps({
                 "queriedKeys": list(queried_keys),
                 "commonKeys": list(common_keys),
@@ -87,6 +87,38 @@ class ItemTemplateView(TemplateView):
         return render(request=request, template_name=self.template_name, context={
             "js_file": "js/templates/edit.js",
             "css_file": "css/templates/edit.css",
+        })
+
+
+class NewBrowserView(TemplateView):
+    template_name = "frontend/react.html"
+
+    def get(self, request: HttpRequest, *args, ct: int = None, **kwargs):
+        ct = get_object_or_404(Container, id=ct)
+        try:
+            depth = int(request.GET.get("depth"))
+        except (ValueError, TypeError):
+            depth = 10
+        ct.get_children(depth)
+
+        containers = {}
+        def add(container):
+            containers[container.id] = {
+                "name": container.name,
+                "parent": container.parent_id,
+                "children": [child.id for child in container.children]
+            }
+            for child in container.children:
+                add(child)
+        add(ct)
+
+        return render(request=request, template_name=self.template_name, context={
+            "js_file": "js/container/browser.js",
+            "css_file": "",
+            "props": repr(json.dumps({
+                "root": ct.id,
+                "containers": containers,
+            })),
         })
 
 
