@@ -15,6 +15,9 @@ class _TreeNode(models.Model):
     name = models.CharField(default="", max_length=255)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, default=0)
 
+    PARENT_QUERY_DEPTH = 63  # How many parents to query at once (max 63 because django)
+                             # See obj_path
+
     def get_absolute_url(self) -> str:
         """
         The url where to find this object.
@@ -47,10 +50,7 @@ class _TreeNode(models.Model):
         :return: absolute path to container
         :rtype: string
         """
-        if self.is_root:
-            return self.name
-        else:
-            return os.path.join(self.parent.path, self.name)
+        return "/".join(obj.name for obj in self.obj_path)
 
     @property
     def obj_path(self) -> List["_TreeNode"]:
@@ -60,14 +60,18 @@ class _TreeNode(models.Model):
         :return: absolute path to container
         :rtype: list of objects
         """
-        if self.is_root:
-            return [self]
-        else:
-            parent = self.__class__.objects.select_related("parent").get(id=self.parent_id)
-            if parent.is_root:
-                return [parent, self]
+        parent_lookup = ["__".join("parent" for _ in range(i)) for i in range(1, self.PARENT_QUERY_DEPTH+1)]
+        path = [self]
+        container = self.__class__.objects.select_related(*parent_lookup).get(id=self.parent_id)
+        for _ in range(self.PARENT_QUERY_DEPTH-1):
+            path.insert(0, container)
+            if container.is_root:
+                break
             else:
-                return parent.parent.obj_path + [parent, self]
+                container = container.parent
+        else:
+            path = container.obj_path + path
+        return path
 
     def __str__(self):
         if self.is_root:
