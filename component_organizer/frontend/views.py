@@ -17,11 +17,14 @@ class NewItemView(CreateView):
 
 
 class ItemView(TemplateView):
-    template_name = "frontend/items/edit.html"
+    template_name = "frontend/react.html"
 
     def get(self, request: HttpRequest, *args, item: int = None, **kwargs):
         get_object_or_404(Item, id=item)
-        return render(request=request, template_name=self.template_name)
+        return render(request=request, template_name=self.template_name, context={
+            "js_file": "js/items/edit.js",
+            "css_file": "css/items/edit.css",
+        })
 
 
 class ItemListView(TemplateView):
@@ -77,11 +80,14 @@ class ItemListView(TemplateView):
 
 
 class ItemTemplateView(TemplateView):
-    template_name = "frontend/templates/edit.html"
+    template_name = "frontend/react.html"
 
     def get(self, request: HttpRequest, *args, template: int = None, **kwargs):
         get_object_or_404(ItemTemplate, id=template)
-        return render(request=request, template_name=self.template_name)
+        return render(request=request, template_name=self.template_name, context={
+            "js_file": "js/templates/edit.js",
+            "css_file": "css/templates/edit.css",
+        })
 
 
 class BrowserView(TemplateView):
