@@ -95,7 +95,7 @@ class BrowserView(TemplateView):
 
     def get(self, request: HttpRequest, ct: int = 0, *args, **kwargs):
         container = get_object_or_404(Container, id=ct)
-        children = Container.objects.filter(parent=container).exclude(container=container).all()
+        children = container.children_manager.exclude(id=container.id).all()
         items = ItemLocation.objects.filter(parent=container).all()
 
         return render(

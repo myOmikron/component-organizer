@@ -1,4 +1,3 @@
-import os
 from collections import defaultdict
 from typing import List
 
@@ -13,7 +12,7 @@ class _TreeNode(models.Model):
         abstract = True
 
     name = models.CharField(default="", max_length=255)
-    parent = models.ForeignKey("self", on_delete=models.CASCADE, default=0)
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, default=0, related_name="children_manager")
 
     PARENT_QUERY_DEPTH = 63  # How many parents to query at once (max 63 because django)
                              # See obj_path
@@ -43,16 +42,6 @@ class _TreeNode(models.Model):
         return self.parent_id == self.id
 
     @property
-    def path(self) -> str:
-        """
-        Return the absolute path
-
-        :return: absolute path to container
-        :rtype: string
-        """
-        return "/".join(obj.name for obj in self.obj_path)
-
-    @property
     def obj_path(self) -> List["_TreeNode"]:
         """
         Return the absolute path as list of objects
@@ -72,6 +61,40 @@ class _TreeNode(models.Model):
         else:
             path = container.obj_path + path
         return path
+
+    def get_children(self, depth: int = 1) -> List["_TreeNode"]:
+        """
+        Query all children up to a given depth and return list of immediate children.
+        Those children have an extra attribute `children` which holds their children.
+        This continues up to the specified depth.
+        :param depth: how many layers of children to query (default 1 for just direct children; max 64)
+        :type depth: int
+        :return: list of direct children with extra children attribute
+        :rtype: list of objects
+        """
+        if not 0 < depth < 65:
+            raise ValueError("depth must be between 1 and 64 (inclusive)")
+
+        base = self.__class__.objects.exclude(id=self.id)
+        layers = []
+        for i in range(depth):
+            layers.append(base.filter(**{"__".join("parent" for _ in range(i+1)) + "_id": self.id}))
+        query = layers[0].union(*layers[1:])
+
+        nodes = {}
+        for node in query:
+            nodes[node.id] = node
+            node.children = []
+
+        direct = []
+        for node in nodes.values():
+            if node.parent_id == self.id:
+                direct.append(node)
+            if node.parent_id in nodes:
+                node.parent = nodes[node.parent_id]
+                nodes[node.parent_id].children.append(node)
+
+        return direct
 
     def __str__(self):
         if self.is_root:
