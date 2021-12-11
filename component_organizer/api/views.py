@@ -139,7 +139,8 @@ class ItemTemplateView(View):
 
     @staticmethod
     def template2dict(template: ItemTemplate):
-        return {"id": template.id, "name": template.name_format, "fields": template.get_fields()}
+        return {"id": template.id, "name": template.name_format, "fields": template.get_fields(),
+                "parent": template.parent_id, "ownFields": [field.value for field in template.fields.all()]}
 
     def post(self, request, *args, **kwargs):
         try:

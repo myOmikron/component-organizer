@@ -93,14 +93,14 @@ class ItemTemplate(_TreeNode):
     name_format = models.CharField(max_length=255, default="", blank="")
     """To get an item's name, this string will be formatted with the item's variables"""
 
-    def get_fields(self):
+    def get_fields(self) -> List[str]:
         """
         Return a list of fields an item of this category must have.
         """
-        fields = list(map(lambda t: t[0], self.fields.values_list("value")))
-        if not self.is_root:
-            fields = self.parent.get_fields() + fields
-        return fields
+        fields = set()
+        for obj in self.obj_path:
+            fields.update(value for value, in obj.fields.values_list("value"))
+        return list(fields)
 
 
 class ItemLocation(models.Model):

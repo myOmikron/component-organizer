@@ -2,7 +2,7 @@ import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
 import {request} from "../async.js";
-import {AutoComplete} from "../textinput.js";
+import {LazyAutocomplete} from "../textinput.js";
 
 const e = React.createElement;
 
@@ -48,48 +48,6 @@ function format(string, kwargs) {
             // TODO: format value
         }
         return "{".repeat(Math.floor(leadingBrackets / 2)) + result + "}".repeat(Math.floor(tailingBrackets / 2));
-    });
-}
-
-function LazyAutocomplete(props) {
-    const {url, value, setValue, ...otherProps} = props;
-    const [index, setIndex] = React.useState(-1);
-    const [focused, setFocused] = React.useState(false);
-    const [active, setActive] = React.useState(false);  // has the input been focus on (at least once)
-    const [options, setOptions] = React.useState(null); // all options to choose from
-    const [filteredOptions, setFilteredOptions] = React.useState([]); // options which still match current value
-
-    React.useEffect(function() {
-        if (!active && focused) {
-            setActive(true);
-        }
-    }, [focused]);
-    React.useEffect(function() {
-        if (active) {
-            request(url).then(function (options) {setOptions(options);})
-        }
-    }, [url, active]);
-    React.useEffect(function () {
-        if (options !== null) {
-            const lowerValue = ("" + value).toLowerCase();
-            setFilteredOptions(options.filter((option) => ("" + option).toLowerCase().startsWith(lowerValue)));
-        }
-    }, [options, value]);
-
-    function complete() {
-        if (index < 0 || index >= filteredOptions.length) return;
-        setValue(filteredOptions[index]);
-    }
-
-    return e(AutoComplete, {
-        focused,
-        complete,
-        options: filteredOptions,
-        index, setIndex,
-        value, setValue,
-        onFocus() {setFocused(true);},
-        onBlur() {setFocused(false);},
-        ...otherProps,
     });
 }
 

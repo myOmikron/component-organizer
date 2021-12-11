@@ -6,7 +6,7 @@ from django.http import HttpRequest, HttpResponseRedirect, Http404
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView, CreateView
 
-from backend.models import Container, ItemLocation, Item, Dict
+from backend.models import Container, ItemLocation, Item, Dict, ItemTemplate
 from backend.queries import filter_items
 
 
@@ -74,6 +74,14 @@ class ItemListView(TemplateView):
                 "items": items,
             })),
         })
+
+
+class ItemTemplateView(TemplateView):
+    template_name = "frontend/templates/edit.html"
+
+    def get(self, request: HttpRequest, *args, template: int = None, **kwargs):
+        get_object_or_404(ItemTemplate, id=template)
+        return render(request=request, template_name=self.template_name)
 
 
 class BrowserView(TemplateView):
