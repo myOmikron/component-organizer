@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import reduce
 from typing import List
 
 from django.db import models
@@ -75,19 +76,20 @@ class _TreeNode(models.Model):
         if not 0 < depth < 65:
             raise ValueError("depth must be between 1 and 64 (inclusive)")
 
-        base = self.__class__.objects.exclude(id=self.id)
-        layers = []
-        for i in range(depth):
-            layers.append(base.filter(**{"__".join("parent" for _ in range(i+1)) + "_id": self.id}))
-        query = layers[0].union(*layers[1:])
+        qs = [
+            models.Q(**{"__".join("parent" for _ in range(i)): self})
+            for i in range(1, depth+1)
+        ]
 
         nodes = {}
-        for node in query:
+        for node in self.__class__.objects.filter(reduce(lambda x, y: x | y, qs)):
             nodes[node.id] = node
             node.children = []
 
         direct = []
         for node in nodes.values():
+            if node.is_root:
+                continue
             if node.parent_id == self.id:
                 direct.append(node)
             if node.parent_id in nodes:
