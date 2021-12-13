@@ -18,10 +18,16 @@ class Browser extends React.Component {
 
     renderContainer(ct) {
         const {name, children} = this.props.containers[ct];
-        return e("table", {}, [
-            e("tr", {}, [
+        let {open} = this.props;
+        if (!open) {
+            open = function (ct) {
+                window.location = "/browse/container/" + ct;
+            }
+        }
+        return e("table", {className: "browser"}, [
+            e("tr", {className: "browser-head"}, [
                 e("td", {
-                    style: {cursor: "pointer"},
+                    colSpan: 2,
                     onClick: function () {
                         this.setState((state) => ({
                             openContainers: {
@@ -30,12 +36,20 @@ class Browser extends React.Component {
                             }
                         }));
                     }.bind(this),
-                }, this.state.openContainers[ct] ? "A" : "V"),
+                }, e("img", {src: "/static/img/caret_down.svg", className: this.state.openContainers[ct] ? "" : "closed-caret"})),
                 e("td", {
-                    style: {cursor: "pointer"},
+                    onClick() {
+                        open(ct);
+                    },
                 }, name),
             ]),
-            ...(this.state.openContainers[ct] ? children.map((child) => e("tr", {}, [e("td"), e("td", {}, this.renderContainer(child))])) : []),
+            ...(this.state.openContainers[ct] ? children.map(
+                (child) => e("tr", {className: "browser-child"}, [
+                    e("td"),
+                    e("td"),
+                    e("td", {}, this.renderContainer(child))
+                ])
+            ) : []),
         ]);
     }
 

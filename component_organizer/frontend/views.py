@@ -114,7 +114,7 @@ class NewBrowserView(TemplateView):
 
         return render(request=request, template_name=self.template_name, context={
             "js_file": "js/container/browser.js",
-            "css_file": "",
+            "css_file": "css/container/browser.css",
             "props": repr(json.dumps({
                 "root": ct.id,
                 "containers": containers,
