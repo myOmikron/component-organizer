@@ -150,12 +150,18 @@ class ItemTemplateView(View):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=405)
 
-        check_params(data, [("item_name", str), ("fields", list)])
+        if response := check_params(data, [("name", str), ("parent", int)]) is not None:
+            return response
 
-        template: ItemTemplate = ItemTemplate.objects.create(name_format=data["item_name"])
-        for field in data["fields"]:
-            if isinstance(field, str):
-                template.fields.add(StringValue.get(field))
+        template: ItemTemplate = ItemTemplate.objects.create(
+            name=data["name"],
+            parent_id=data["parent"],
+            name_format=data["item_name"] if "item_name" in data and isinstance(data["item_name"], str) else "",
+        )
+        if "fields" in data and isinstance(data["fields"], list):
+            for field in data["fields"]:
+                if isinstance(field, str):
+                    template.fields.add(StringValue.get(field))
 
         return JsonResponse(
             {"success": True, "result": self.template2dict(template)},

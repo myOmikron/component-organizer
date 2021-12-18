@@ -13,12 +13,34 @@ export class ContainerTree extends React.Component {
             this.state.openContainers[ct] = false;
         }
         this.state.openContainers[this.props.root] = true;
+        for (let i = 0; i < this.props.initiallyOpened.length; i++) {
+            let ct = this.props.initiallyOpened[i];
+            while (ct !== this.props.root) {
+                this.state.openContainers[ct] = true;
+                ct = this.props.containers[ct].parent;
+            }
+        }
     }
 
     renderContainer(ct) {
         const setState = this.setState.bind(this);
         const {name, children} = this.props.containers[ct];
-        const {openContainer} = this.props;
+        const {openContainer, createContainer} = this.props;
+
+        function CreateContainer({ct}) {
+            if (createContainer) {
+                return e("tr", {}, [
+                    e("td"), e("td"),
+                    e("td", {onClick() {createContainer(ct);}, style: {cursor: "pointer"}}, [
+                        e("img", {src: "/static/img/star.svg", width: 26, height: 20}),
+                        "Create new entry here"
+                    ]),
+                ]);
+            } else {
+                return null;
+            }
+        }
+
         return e("table", {className: "container-tree"}, [
             e("tr", {}, [
                 e("td", {
@@ -44,13 +66,12 @@ export class ContainerTree extends React.Component {
                     },
                 }, name),
             ]),
-            ...(this.state.openContainers[ct] ? children.map(
+            ...(this.state.openContainers[ct] ? [e(CreateContainer, {ct,}), ...children.map(
                 (child) => e("tr", {}, [
-                    e("td"),
-                    e("td"),
+                    e("td"), e("td"),
                     e("td", {}, this.renderContainer(child))
                 ])
-            ) : []),
+            )] : []),
         ]);
     }
 
@@ -59,12 +80,15 @@ export class ContainerTree extends React.Component {
     }
 }
 ContainerTree.defaultProps = {
-    openContainer: function (ct) {console.log("Opened container with id: ", ct)},
+    createContainer: null,  // function (ct) {console.log("Created new container inside container with id: ", ct);}
+    openContainer: function (ct) {console.log("Opened container with id: ", ct);},
     root: 0,
+    initiallyOpened: [],
     containers: {
         0: {
             name: "Dummy Root",
             children: [],
+            parent: 0,
         }
     }
 };
