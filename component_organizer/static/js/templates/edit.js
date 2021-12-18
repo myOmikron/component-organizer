@@ -125,6 +125,18 @@ class EditTemplate extends React.Component {
                         });
                 }.bind(this),
             }, "Save"),
+            e("button", {
+                onClick: function () {
+                    request(this.apiEndpoint, "DELETE")
+                        .then(({success}) => {
+                            if (success) {
+                                window.location = "/template/" + this.state.parent;
+                            } else {
+                                console.error("Couldn't delete template");
+                            }
+                        });
+                }.bind(this),
+            }, "Delete"),
         ]);
     }
 }
