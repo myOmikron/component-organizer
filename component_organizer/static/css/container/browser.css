@@ -13,19 +13,3 @@ img {
     -webkit-filter: grayscale(100%) invert(100%); /* Safari 6.0 - 9.0 */
     filter: contrast(60%) invert(100%);
 }
-
-table.browser {
-    border-collapse: collapse;
-}
-
-tr.browser-head {
-    cursor: pointer;
-}
-
-tr.browser-child > td:first-child {
-    border-right: 1px solid gray;
-}
-
-img.closed-caret {
-    transform: rotate(-90deg);
-}

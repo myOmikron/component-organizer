@@ -18,8 +18,8 @@ export class ContainerTree extends React.Component {
     renderContainer(ct) {
         const {name, children} = this.props.containers[ct];
         const {openContainer} = this.props;
-        return e("table", {className: "browser"}, [
-            e("tr", {className: "browser-head"}, [
+        return e("table", {className: "container-tree"}, [
+            e("tr", {}, [
                 e("td", {
                     colSpan: 2,
                     onClick: function () {
@@ -38,7 +38,7 @@ export class ContainerTree extends React.Component {
                 }, name),
             ]),
             ...(this.state.openContainers[ct] ? children.map(
-                (child) => e("tr", {className: "browser-child"}, [
+                (child) => e("tr", {}, [
                     e("td"),
                     e("td"),
                     e("td", {}, this.renderContainer(child))

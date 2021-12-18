@@ -24,3 +24,25 @@ a {
     text-decoration: None;
     color: white;
 }
+
+/* ContainerTree */
+table.container-tree {
+    border-collapse: collapse;
+}
+
+table.container-tree > tr:first-child {
+    cursor: pointer;
+}
+
+table.container-tree > tr:not(:first-child) > td:first-child {
+    border-right: 1px solid gray;
+}
+
+table.container-tree img {
+    -webkit-filter: grayscale(100%) invert(100%); /* Safari 6.0 - 9.0 */
+    filter: invert(100%);
+}
+
+table.container-tree img.closed-caret {
+    transform: rotate(-90deg);
+}
