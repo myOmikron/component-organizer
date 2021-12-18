@@ -29,9 +29,9 @@ class Browser extends React.Component {
                 e("link", {rel: "stylesheet", href: "/static/css/container/browser.css"}),
                 e("div", {className: "flex-horizontal"}, [
                     ...this.props.containers[this.state.openContainer].children.map((ct) =>
-                        e("a", {href: "/browse/container/" + ct}, e("div", {className: "item-box"}, [e("img", {className: "icon", alt: "Folder", src: "/static/img/folder.svg"}), e("br"), this.props.containers[ct].name])),
+                        e("a", {href: "/container/" + ct}, e("div", {className: "item-box"}, [e("img", {className: "icon", alt: "Folder", src: "/static/img/folder.svg"}), e("br"), this.props.containers[ct].name])),
                     ),
-                    e("a", {href: "/browse/container/" + this.state.openContainer + "/new"}, e("div", {className: "item-box"}, [e("img", {className: "icon", alt: "New Folder", src: "/static/img/new_folder.svg"}), e("br"), "Add new container"])),
+                    e("a", {href: "/container/" + this.state.openContainer + "/new"}, e("div", {className: "item-box"}, [e("img", {className: "icon", alt: "New Folder", src: "/static/img/new_folder.svg"}), e("br"), "Add new container"])),
                     /*{% for item in items %}
                     <a href="">
                         <div class="item-box">

@@ -26,7 +26,7 @@ class _TreeNode(models.Model):
         :return: url to object
         :rtype: string
         """
-        return f"/browse/{self.__class__.__name__.lower()}/{self.id}"
+        return f"/{self.__class__.__name__.lower()}/{self.id}"
 
     @property
     def url(self):

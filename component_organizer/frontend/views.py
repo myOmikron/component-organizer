@@ -123,12 +123,12 @@ class ItemTemplateView(TemplateView):
             "css_file": "css/templates/edit.css",
             "props": repr(json.dumps({
                 "root": 0,
-                "containers": get_containers(ItemTemplate, 0),
+                "containers": _get_containers(ItemTemplate, 0),
             })),
         })
 
 
-class NewBrowserView(TemplateView):
+class ContainerView(TemplateView):
     template_name = "frontend/react.html"
 
     def get(self, request: HttpRequest, *args, ct: int = None, **kwargs):
@@ -142,27 +142,9 @@ class NewBrowserView(TemplateView):
             "css_file": "css/container/browser.css",
             "props": repr(json.dumps({
                 "root": ct.id,
-                "containers": get_containers(Container, ct, depth),
+                "containers": _get_containers(Container, ct, depth),
             })),
         })
-
-
-class BrowserView(TemplateView):
-    template_name = "frontend/container/browser.html"
-
-    def get(self, request: HttpRequest, ct: int = 0, *args, **kwargs):
-        container = get_object_or_404(Container, id=ct)
-        children = container.children_manager.exclude(id=container.id).all()
-        items = ItemLocation.objects.filter(parent=container).all()
-
-        return render(
-            request,
-            self.template_name,
-            {
-                "container": container,
-                "containers": children,
-                "items": items
-            })
 
 
 class ContainerForm(ModelForm):
@@ -175,7 +157,7 @@ class ContainerForm(ModelForm):
 class CreateContainerView(CreateView):
     template_name = "frontend/container/container_form.html"
     form_class = ContainerForm
-    success_url = "/browse/container/{parent_id}"
+    success_url = "/container/{parent_id}"
 
     def get(self, request: HttpRequest, ct: int = 0, *args, **kwargs):
         self.object = None  # Random line from BaseCreateView
