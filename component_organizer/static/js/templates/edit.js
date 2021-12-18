@@ -3,6 +3,7 @@ import ReactDOM from "../react-dom.js";
 
 import {request} from "../async.js";
 import TextInput, {LazyAutocomplete} from "../textinput.js";
+import {ContainerTree, SplitScreen} from "../trees.js";
 
 const e = React.createElement;
 
@@ -21,8 +22,7 @@ class EditTemplate extends React.Component {
             _toAdd: "",
         }
 
-        const path = window.location.pathname.split("/");
-        this.apiEndpoint = "/api/template/" + path[path.length-1];
+        this.apiEndpoint = "/api/template/" + this.props.template;
         const setState = this.setState.bind(this);
         request(this.apiEndpoint).then((state) => {
             const isOwnField = {};
@@ -39,6 +39,8 @@ class EditTemplate extends React.Component {
 
     render() {
         const setState = this.setState.bind(this);
+        const {openTemplate} = this.props;
+        const {parent} = this.state;
 
         const ownFields = this.state.fields.filter((field) => this.state.isOwnField[field]);
         const parentFields = this.state.fields.filter((field) => !this.state.isOwnField[field]);
@@ -81,7 +83,7 @@ class EditTemplate extends React.Component {
         }, [
             e("h1", {}, "Name"),
             e(TextInput, {value: this.state.name, setValue(value) {setState({name: value});}}),
-            e("h1", {}, ["Inherited from ", e("a", {href: "/template/"+this.state.parent}, this.state.parent)]),
+            e("h1", {onClick() {openTemplate(parent);},}, ["Inherited from ", parent]),
             e("ul", {}, parentFields.map((field) => e("li", {}, field))),
             e("h1", {}, "Own fields"),
             e("table", {}, [
@@ -122,5 +124,38 @@ class EditTemplate extends React.Component {
         ]);
     }
 }
+EditTemplate.defaultProps = {
+    template: 0,
+    openTemplate: function (id) {console.log("Open template with id: ", id)},
+};
 
-ReactDOM.render(React.createElement(EditTemplate), document.getElementById("root"));
+class Main extends React.Component {
+
+    constructor(props) {
+        super(props);
+
+        const path = window.location.pathname.split("/");
+        this.state = {
+            currentTemplate: parseInt(path[path.length - 1]),
+        };
+    }
+
+    render() {
+        const openTemplate = function (id) {this.setState({currentTemplate: id});}.bind(this);
+
+        return e(SplitScreen, {}, [
+            e(ContainerTree, {
+                key: "containerTree",
+                openContainer: openTemplate,
+                ...this.props,
+            }),
+            e(EditTemplate, {
+                key: "template" + this.state.currentTemplate,
+                template: this.state.currentTemplate,
+                openTemplate,
+            }),
+        ]);
+    }
+}
+
+ReactDOM.render(e(Main, document.props), document.getElementById("root"));

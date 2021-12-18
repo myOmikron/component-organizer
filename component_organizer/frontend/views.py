@@ -1,13 +1,47 @@
 import json
+from typing import Type, Union
 
 from django.db.models import Sum
 from django.forms import ModelForm, HiddenInput
-from django.http import HttpRequest, HttpResponseRedirect, Http404
+from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView, CreateView
 
-from backend.models import Container, ItemLocation, Item, Dict, ItemTemplate
+from backend.models import Container, ItemLocation, Item, ItemTemplate
+from backend.models.base import _TreeNode
 from backend.queries import filter_items
+
+
+def _get_containers(cls: Type[_TreeNode], root: Union[_TreeNode, int], depth: int = 64):
+    """
+    Query a `Container` / `ItemTemplate` / `Category` tree and reformat it into a jsonable dict.
+    This dict will be in the format which the `ContainerTree` component (see `trees.js`) expects.
+
+    :param cls: A tree model to query
+    :type cls: subclass of _TreeNode
+    :param root: Root node to query children from
+    :type root: instance of `cls` or primary key
+    :param depth: How many layer of children to query:
+    :type depth: integer
+    :return: tree as a jsonable dict
+    :rtype: dictionary
+    """
+    if isinstance(root, int):
+        root = cls.objects.get(id=root)
+    root.get_children(depth)
+
+    nodes = {}
+    def add(node: _TreeNode):
+        nodes[node.id] = {
+            "name": node.name,
+            "parent": node.parent_id,
+            "children": [child.id for child in node.children]
+        }
+        for child in node.children:
+            add(child)
+    add(root)
+
+    return nodes
 
 
 class NewItemView(CreateView):
@@ -87,6 +121,10 @@ class ItemTemplateView(TemplateView):
         return render(request=request, template_name=self.template_name, context={
             "js_file": "js/templates/edit.js",
             "css_file": "css/templates/edit.css",
+            "props": repr(json.dumps({
+                "root": 0,
+                "containers": get_containers(ItemTemplate, 0),
+            })),
         })
 
 
@@ -99,25 +137,12 @@ class NewBrowserView(TemplateView):
             depth = int(request.GET.get("depth"))
         except (ValueError, TypeError):
             depth = 10
-        ct.get_children(depth)
-
-        containers = {}
-        def add(container):
-            containers[container.id] = {
-                "name": container.name,
-                "parent": container.parent_id,
-                "children": [child.id for child in container.children]
-            }
-            for child in container.children:
-                add(child)
-        add(ct)
-
         return render(request=request, template_name=self.template_name, context={
             "js_file": "js/container/browser.js",
             "css_file": "css/container/browser.css",
             "props": repr(json.dumps({
                 "root": ct.id,
-                "containers": containers,
+                "containers": get_containers(Container, ct, depth),
             })),
         })
 
