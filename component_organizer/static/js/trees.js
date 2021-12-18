@@ -16,24 +16,31 @@ export class ContainerTree extends React.Component {
     }
 
     renderContainer(ct) {
+        const setState = this.setState.bind(this);
         const {name, children} = this.props.containers[ct];
         const {openContainer} = this.props;
         return e("table", {className: "container-tree"}, [
             e("tr", {}, [
                 e("td", {
                     colSpan: 2,
-                    onClick: function () {
-                        this.setState((state) => ({
+                    onClick() {
+                        setState((state) => ({
                             openContainers: {
                                 ...state.openContainers,
                                 [ct]: !state.openContainers[ct],
                             }
                         }));
-                    }.bind(this),
+                    },
                 }, e("img", {src: "/static/img/caret_down.svg", className: this.state.openContainers[ct] ? "" : "closed-caret"})),
                 e("td", {
                     onClick() {
                         openContainer(ct);
+                        setState((state) => ({
+                            openContainers: {
+                                ...state.openContainers,
+                                [ct]: true,
+                            }
+                        }));
                     },
                 }, name),
             ]),

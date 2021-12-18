@@ -139,8 +139,10 @@ class ItemTemplateView(View):
 
     @staticmethod
     def template2dict(template: ItemTemplate):
-        return {"id": template.id, "name": template.name_format, "fields": template.get_fields(),
-                "parent": template.parent_id, "ownFields": [field.value for field in template.fields.all()]}
+        return {"id": template.id, "name": template.name,
+                "item_name": template.name_format, "fields": template.get_fields(),
+                "parent": {"id": template.parent.id, "name": template.parent.name},
+                "ownFields": [field.value for field in template.fields.all()]}
 
     def post(self, request, *args, **kwargs):
         try:
@@ -148,9 +150,9 @@ class ItemTemplateView(View):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=405)
 
-        check_params(data, [("name", str), ("fields", list)])
+        check_params(data, [("item_name", str), ("fields", list)])
 
-        template: ItemTemplate = ItemTemplate.objects.create(name_format=data["name"])
+        template: ItemTemplate = ItemTemplate.objects.create(name_format=data["item_name"])
         for field in data["fields"]:
             if isinstance(field, str):
                 template.fields.add(StringValue.get(field))
@@ -183,8 +185,8 @@ class ItemTemplateView(View):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=405)
 
-        if "name" in data and isinstance(data["name"], str):
-            template.name_format = data["name"]
+        if "item_name" in data and isinstance(data["item_name"], str):
+            template.name_format = data["item_name"]
         if "fields" in data:
             template.fields.clear()
             for field in data["fields"]:

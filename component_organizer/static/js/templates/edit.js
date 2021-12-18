@@ -14,11 +14,15 @@ class EditTemplate extends React.Component {
 
         this.state= {
             id: -1,
-            name: "",
+            name: "Not loaded yet",
+            item_name: "",
             fields: [],
             ownFields: [],
             isOwnField: {},
-            parent: -1,
+            parent: {
+                id: -1,
+                name: "",
+            },
             _toAdd: "",
         }
 
@@ -81,10 +85,10 @@ class EditTemplate extends React.Component {
         return e("div", {
             className: "flex-vertical",
         }, [
-            e("h1", {}, "Name"),
-            e(TextInput, {value: this.state.name, setValue(value) {setState({name: value});}}),
-            e("h1", {onClick() {openTemplate(parent);},}, ["Inherited from ", parent]),
-            e("ul", {}, parentFields.map((field) => e("li", {}, field))),
+            e("h1", {}, this.state.name),
+            e(TextInput, {value: this.state.item_name, setValue(value) {setState({item_name: value});}}),
+            e("h1", {onClick() {openTemplate(parent.id);},}, ["Inherited from ", parent.name]),
+            parentFields.length > 0 ? e("ul", {}, parentFields.map((field) => e("li", {}, field))) : "Nothing",
             e("h1", {}, "Own fields"),
             e("table", {}, [
                 ownFields.map((field) => e("tr", {}, [
@@ -111,7 +115,7 @@ class EditTemplate extends React.Component {
             ]),
             e("button", {
                 onClick: function () {
-                    request(this.apiEndpoint, "PUT", "json", {name: this.state.name, fields: this.state.ownFields})
+                    request(this.apiEndpoint, "PUT", "json", {item_name: this.state.item_name, fields: this.state.ownFields})
                         .then(({success, result}) => {
                             if (success) {
                                 setState(result);
