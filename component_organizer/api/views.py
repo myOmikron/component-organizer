@@ -211,9 +211,7 @@ class ItemTemplateView(View):
         except ItemTemplate.DoesNotExist:
             return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
 
-        if template.item_set.count() > 0:
-            return JsonResponse({"success": False, "error": "This template is still used by some items"}, status=409)
-
+        template.item_set.update(template_id=template.parent_id)
         template.delete()
 
         return JsonResponse({"success": True}, status=200)

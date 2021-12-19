@@ -130,7 +130,7 @@ class EditTemplate extends React.Component {
                     request(this.apiEndpoint, "DELETE")
                         .then(({success}) => {
                             if (success) {
-                                window.location = "/template/" + this.state.parent;
+                                window.location = "/template/" + this.state.parent.id;
                             } else {
                                 console.error("Couldn't delete template");
                             }
