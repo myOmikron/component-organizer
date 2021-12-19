@@ -1,3 +1,5 @@
+from typing import Type
+
 from django.db import models
 
 
@@ -5,13 +7,19 @@ from django.db import models
 # Value models #
 # ------------ #
 class _SingleValue(models.Model):
-    value = NotImplemented
+    value: models.Field = NotImplemented
+    kvp: Type[models.Model] = NotImplemented
 
     class Meta:
         abstract = True
 
     def __str__(self):
         return str(self.value)
+
+    @classmethod
+    def key_value_pair(cls, model_cls):
+        cls.kvp = model_cls
+        return model_cls
 
     @classmethod
     def get(cls, value):
@@ -26,10 +34,6 @@ class StringValue(_SingleValue):
     value = models.CharField(max_length=255, default="", unique=True)
 
 
-# class IntegerValue(_SingleValue):
-#     value = models.IntegerField(default=0, unique=True)
-
-
 class FloatValue(_SingleValue):
     value = models.FloatField(default=0, unique=True)
 
@@ -37,6 +41,7 @@ class FloatValue(_SingleValue):
 # ---------- #
 # KVP models #
 # ---------- #
+@_SingleValue.key_value_pair
 class _KeyValuePair(models.Model):
     key = models.ForeignKey(StringValue, on_delete=models.CASCADE)
     value = NotImplemented
@@ -49,14 +54,12 @@ class _KeyValuePair(models.Model):
         abstract = True
 
 
+@StringValue.key_value_pair
 class StringVariable(_KeyValuePair):
     value = models.ForeignKey(StringValue, on_delete=models.CASCADE, related_name="variable")
 
 
-# class IntegerVariable(_KeyValuePair):
-#     value = models.ForeignKey(IntegerValue, on_delete=models.CASCADE, related_name="variable")
-
-
+@FloatValue.key_value_pair
 class FloatVariable(_KeyValuePair):
     value = models.ForeignKey(FloatValue, on_delete=models.CASCADE, related_name="variable")
 
@@ -70,16 +73,18 @@ class Dict(models.Model):
     Keys have to be strings and values can be any of string, integer or float.
     """
 
-    KVP_MODELS = {
-        str: StringVariable,
-        int: FloatVariable,
-        float: FloatVariable,
-    }
-    VALUE_MODELS = {
-        str: StringValue,
-        int: FloatValue,
-        float: FloatValue,
-    }
+    @classmethod
+    def iter_value_models(cls):
+        return [FloatValue, StringValue]
+
+    @classmethod
+    def get_value_model(cls, value):
+        if isinstance(value, (int, float)):
+            return FloatValue
+        elif isinstance(value, str):
+            return StringValue
+        else:
+            raise ValueError(f"Couldn't find a Model for {repr(value)}")
 
     class Meta:
         abstract = True
@@ -102,8 +107,8 @@ class Dict(models.Model):
             lookup[obj.id] = obj
             obj._data = {}
 
-        for KeyValuePair in cls.KVP_MODELS.values():
-            for var in KeyValuePair.objects.filter(owner__in=objects).select_related("key", "value"):
+        for ValueModel in cls.iter_value_models():
+            for var in ValueModel.kvp.objects.filter(owner__in=objects).select_related("key", "value"):
                 lookup[var.owner_id]._data[var.key.value] = var.value.value
 
         return objects
@@ -114,8 +119,8 @@ class Dict(models.Model):
         """
         self._data = {}
 
-        for KeyValuePair in self.KVP_MODELS.values():
-            for var in KeyValuePair.objects.filter(owner=self).select_related("key", "value"):
+        for ValueModel in self.iter_value_models():
+            for var in ValueModel.kvp.objects.filter(owner=self).select_related("key", "value"):
                 self._data[var.key.value] = var.value.value
 
     def __getitem__(self, key):
@@ -128,21 +133,18 @@ class Dict(models.Model):
             return self._data[key]
 
     def __setitem__(self, key, value):
-        value_type = type(value)
-        try:
-            Container = self.VALUE_MODELS[value_type]
-            KeyValuePair = self.KVP_MODELS[value_type]
-        except KeyError:
-            raise TypeError(value_type) from None
+        Container = self.get_value_model(value)
+        KeyValuePair = Container.kvp
 
         if self._data is None:
             self.populate()
 
         if key in self._data:
-            if type(self._data[key]) == value_type:
-                var = KeyValuePair.objects.filter(owner=self, key__value=key).update(value=Container.get(value))
+            OldContainer = self.get_value_model(self._data[key])
+            if OldContainer is Container:
+                KeyValuePair.objects.filter(owner=self, key__value=key).update(value=Container.get(value))
             else:
-                self.KVP_MODELS[type(self._data[key])].objects.filter(owner=self, key__value=key).delete()
+                OldContainer.kvp.objects.filter(owner=self, key__value=key).delete()
                 KeyValuePair.objects.create(owner=self, key=StringValue.get(key), value=Container.get(value))
         else:
             KeyValuePair.objects.create(owner=self, key=StringValue.get(key), value=Container.get(value))
@@ -156,7 +158,7 @@ class Dict(models.Model):
         if key not in self._data:
             raise KeyError(key)
         else:
-            KeyValuePair = self.KVP_MODELS[type(self._data[key])]
+            KeyValuePair = self.get_value_model(self._data[key]).kvp
             KeyValuePair.objects.filter(owner=self, key__value=key).delete()
             del self._data[key]
 

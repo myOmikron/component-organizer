@@ -15,8 +15,8 @@ def get_keys(at_least: int = 1):
     :return: annotated queryset of StringValues
     """
     annotations = {}
-    for type_, model in Dict.KVP_MODELS.items():
-        annotations[f"amount_{type_.__name__}"] = Count(f"{model.__name__.lower()}__key")
+    for ValueModel in Dict.iter_value_models():
+        annotations[f"amount_{ValueModel.__name__.lower()}"] = Count(f"{ValueModel.kvp.__name__.lower()}__key")
     annotations["amount_total"] = sum(annotations.values())
 
     return StringValue.objects.annotate(**annotations) \
@@ -35,11 +35,10 @@ def get_values(key: str, at_least: int = 1):
     :return: annotated list of StringValues, FloatValues and so on
     """
     values = set()
-    for type_, kvp in Dict.KVP_MODELS.items():
-        val = Dict.VALUE_MODELS[type_]
-        values.update(val.objects.filter(variable__in=kvp.objects.filter(key__value=key)) \
-                         .annotate(uses=Count("variable")) \
-                         .filter(uses__gte=at_least))
+    for ValueModel in Dict.iter_value_models():
+        values.update(ValueModel.objects.filter(variable__in=ValueModel.kvp.objects.filter(key__value=key)) \
+                                .annotate(uses=Count("variable")) \
+                                .filter(uses__gte=at_least))
     return list(values)
 
 
@@ -105,7 +104,7 @@ def _parse_lookup(string: str, queried_keys: set = None) -> QuerySet:
 
     if queried_keys is not None:
         queried_keys.add(key)
-    return Dict.KVP_MODELS[type(value)].objects \
+    return Dict.get_value_model(value).kvp.objects \
         .filter(key__value=key, **{f"value__value{_comparison_operators[op]}": value}) \
         .values_list("owner_id")
 
