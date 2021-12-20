@@ -59,13 +59,6 @@ def filter_items(string: str, /, queryset: QuerySet = None, queried_keys: set = 
         return queryset.all()
 
 
-_comparison_operators = {
-    "=": "",
-    "<": "__lt",
-    ">": "__gt",
-    "<=": "__lte",
-    ">=": "__gte",
-}
 _logic_operators = {
     "|": QuerySet.union,
     "&": QuerySet.intersection,
@@ -99,9 +92,7 @@ def _parse_lookup(string: str, queried_keys: set = None) -> QuerySet:
 
     if queried_keys is not None:
         queried_keys.add(key)
-    return Dict.get_value_model(value).objects \
-        .filter(value_in_pairs__key__value=key, **{f"value{_comparison_operators[op]}": value}) \
-        .values_list("value_in_pairs__owner_id")
+    return Dict.get_value_model(value)._parse_lookup(key, op, value)
 
 
 def _parse_bracket(string_iter: Iterator[str], queried_keys: set = None) -> QuerySet:

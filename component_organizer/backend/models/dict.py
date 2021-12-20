@@ -11,6 +11,14 @@ class _SingleValue(models.Model):
     value_in_pairs: GenericRelation = NotImplemented
     _content_type: ContentType = None
 
+    _comparison_operators = {
+        "=": "",
+        "<": "__lt",
+        ">": "__gt",
+        "<=": "__lte",
+        ">=": "__gte",
+    }
+
     class Meta:
         abstract = True
 
@@ -30,6 +38,21 @@ class _SingleValue(models.Model):
         """
         obj, _ = cls.objects.get_or_create(value=value)
         return obj
+
+    @classmethod
+    def _populate_queryset(cls, owners):
+        """
+        :rtype: iterator of (owner: int, key: str, value: Any) tuples
+        """
+        return cls.objects.filter(value_in_pairs__owner__in=owners) \
+            .values_list("value_in_pairs__owner_id",
+                         "value_in_pairs__key__value",
+                         "value")
+
+    @classmethod
+    def _parse_lookup(cls, key, op, value):
+        return cls.objects.filter(value_in_pairs__key__value=key, **{f"value{cls._comparison_operators[op]}": value}) \
+                          .values_list("value_in_pairs__owner_id")
 
 
 class StringValue(_SingleValue):
@@ -100,8 +123,7 @@ class Dict(models.Model):
             obj._data = {}
 
         for ValueModel in cls.iter_value_models():
-            for owner_id, key, value in ValueModel.objects.filter(value_in_pairs__owner_id__in=objects) \
-                                        .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "value"):
+            for owner_id, key, value in ValueModel._populate_queryset(objects):
                 lookup[owner_id]._data[key] = value
 
         return objects
@@ -114,8 +136,7 @@ class Dict(models.Model):
 
         for ValueModel in self.iter_value_models():
             self._data.update(
-                ValueModel.objects.filter(value_in_pairs__owner=self)
-                                  .values_list("value_in_pairs__key__value", "value")
+                (key, value) for _, key, value in ValueModel._populate_queryset([self])
             )
 
     def __getitem__(self, key):
