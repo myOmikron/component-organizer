@@ -14,14 +14,9 @@ def get_keys(at_least: int = 1):
     :type at_least: int
     :return: annotated queryset of StringValues
     """
-    annotations = {}
-    for ValueModel in Dict.iter_value_models():
-        annotations[f"amount_{ValueModel.__name__.lower()}"] = Count(f"{ValueModel.kvp.__name__.lower()}__key")
-    annotations["amount_total"] = sum(annotations.values())
-
-    return StringValue.objects.annotate(**annotations) \
-                              .filter(amount_total__gte=at_least) \
-                              .order_by("-amount_total", "value").all()
+    return StringValue.objects.annotate(uses=Count("key_in_pairs__key")) \
+                              .filter(uses__gte=at_least) \
+                              .order_by("-uses", "value").all()
 
 
 def get_values(key: str, at_least: int = 1):
@@ -34,12 +29,12 @@ def get_values(key: str, at_least: int = 1):
     :type at_least: int
     :return: annotated list of StringValues, FloatValues and so on
     """
-    values = set()
+    values = []
     for ValueModel in Dict.iter_value_models():
-        values.update(ValueModel.objects.filter(variable__in=ValueModel.kvp.objects.filter(key__value=key)) \
-                                .annotate(uses=Count("variable")) \
-                                .filter(uses__gte=at_least))
-    return list(values)
+        values.extend(ValueModel.objects.filter(value_in_pairs__key__value=key)
+                                        .annotate(uses=Count("value_in_pairs"))
+                                        .filter(uses__gte=at_least))
+    return values
 
 
 def filter_items(string: str, /, queryset: QuerySet = None, queried_keys: set = None) -> QuerySet:
@@ -104,9 +99,9 @@ def _parse_lookup(string: str, queried_keys: set = None) -> QuerySet:
 
     if queried_keys is not None:
         queried_keys.add(key)
-    return Dict.get_value_model(value).kvp.objects \
-        .filter(key__value=key, **{f"value__value{_comparison_operators[op]}": value}) \
-        .values_list("owner_id")
+    return Dict.get_value_model(value).objects \
+        .filter(value_in_pairs__key__value=key, **{f"value{_comparison_operators[op]}": value}) \
+        .values_list("value_in_pairs__owner_id")
 
 
 def _parse_bracket(string_iter: Iterator[str], queried_keys: set = None) -> QuerySet:

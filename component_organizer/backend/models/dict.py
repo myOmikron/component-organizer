@@ -1,6 +1,6 @@
-from typing import Type
-
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
 
 # ------------ #
@@ -8,7 +8,8 @@ from django.db import models
 # ------------ #
 class _SingleValue(models.Model):
     value: models.Field = NotImplemented
-    kvp: Type[models.Model] = NotImplemented
+    value_in_pairs: GenericRelation = NotImplemented
+    _content_type: ContentType = None
 
     class Meta:
         abstract = True
@@ -17,9 +18,10 @@ class _SingleValue(models.Model):
         return str(self.value)
 
     @classmethod
-    def key_value_pair(cls, model_cls):
-        cls.kvp = model_cls
-        return model_cls
+    def content_type(cls):
+        if cls._content_type is None:
+            cls._content_type = ContentType.objects.get_for_model(cls)
+        return cls._content_type
 
     @classmethod
     def get(cls, value):
@@ -32,36 +34,26 @@ class _SingleValue(models.Model):
 
 class StringValue(_SingleValue):
     value = models.CharField(max_length=255, default="", unique=True)
+    value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
 
 
 class FloatValue(_SingleValue):
     value = models.FloatField(default=0, unique=True)
+    value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
 
 
 # ---------- #
-# KVP models #
+# KVP model #
 # ---------- #
-@_SingleValue.key_value_pair
-class _KeyValuePair(models.Model):
-    key = models.ForeignKey(StringValue, on_delete=models.CASCADE)
-    value = NotImplemented
+class KeyValuePair(models.Model):
     owner = models.ForeignKey("backend.Item", on_delete=models.CASCADE)
+    key = models.ForeignKey(StringValue, on_delete=models.CASCADE, related_name="key_in_pairs")
+    value = GenericForeignKey("value_type", "value_id")
+    value_id = models.PositiveIntegerField()
+    value_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"dict_{self.owner_id}.{self.key} = {self.value}"
-
-    class Meta:
-        abstract = True
-
-
-@StringValue.key_value_pair
-class StringVariable(_KeyValuePair):
-    value = models.ForeignKey(StringValue, on_delete=models.CASCADE, related_name="variable")
-
-
-@FloatValue.key_value_pair
-class FloatVariable(_KeyValuePair):
-    value = models.ForeignKey(FloatValue, on_delete=models.CASCADE, related_name="variable")
 
 
 # ---------- #
@@ -102,14 +94,15 @@ class Dict(models.Model):
         """
         objects = []
         lookup = {}
-        for obj in queryset:
+        for obj in queryset.select_related("template"):
             objects.append(obj)
             lookup[obj.id] = obj
             obj._data = {}
 
         for ValueModel in cls.iter_value_models():
-            for var in ValueModel.kvp.objects.filter(owner__in=objects).select_related("key", "value"):
-                lookup[var.owner_id]._data[var.key.value] = var.value.value
+            for owner_id, key, value in ValueModel.objects.filter(value_in_pairs__owner_id__in=objects) \
+                                        .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "value"):
+                lookup[owner_id]._data[key] = value
 
         return objects
 
@@ -120,8 +113,10 @@ class Dict(models.Model):
         self._data = {}
 
         for ValueModel in self.iter_value_models():
-            for var in ValueModel.kvp.objects.filter(owner=self).select_related("key", "value"):
-                self._data[var.key.value] = var.value.value
+            self._data.update(
+                ValueModel.objects.filter(value_in_pairs__owner=self)
+                                  .values_list("value_in_pairs__key__value", "value")
+            )
 
     def __getitem__(self, key):
         if self._data is None:
@@ -133,21 +128,17 @@ class Dict(models.Model):
             return self._data[key]
 
     def __setitem__(self, key, value):
-        Container = self.get_value_model(value)
-        KeyValuePair = Container.kvp
+        ValueModel = self.get_value_model(value)
+        wrapped_value = ValueModel.get(value)
+        wrapped_value = {"value_id": wrapped_value.id, "value_type": ValueModel.content_type()}
 
         if self._data is None:
             self.populate()
 
         if key in self._data:
-            OldContainer = self.get_value_model(self._data[key])
-            if OldContainer is Container:
-                KeyValuePair.objects.filter(owner=self, key__value=key).update(value=Container.get(value))
-            else:
-                OldContainer.kvp.objects.filter(owner=self, key__value=key).delete()
-                KeyValuePair.objects.create(owner=self, key=StringValue.get(key), value=Container.get(value))
+            KeyValuePair.objects.filter(owner=self, key__value=key).update(**wrapped_value)
         else:
-            KeyValuePair.objects.create(owner=self, key=StringValue.get(key), value=Container.get(value))
+            KeyValuePair.objects.create(owner=self, key=StringValue.get(key), **wrapped_value)
 
         self._data[key] = value
 
@@ -158,7 +149,6 @@ class Dict(models.Model):
         if key not in self._data:
             raise KeyError(key)
         else:
-            KeyValuePair = self.get_value_model(self._data[key]).kvp
             KeyValuePair.objects.filter(owner=self, key__value=key).delete()
             del self._data[key]
 
