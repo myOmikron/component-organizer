@@ -1,3 +1,5 @@
+from functools import reduce
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -65,6 +67,52 @@ class FloatValue(_SingleValue):
     value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
 
 
+class UnitValue(_SingleValue):
+    _expo2prefix = {-24: "y", -21: "z", -18: "a", -15: "f", -12: "p", -9: "n", -6: "u", -3: "m", -2: "c", -1: "d",
+                    24: "Y", 21: "Z", 18: "E", 15: "P", 12: "T", 9: "G", 6: "M", 3: "k", 2: "h", 1: "D", 0: ""}
+    _prefix2expo = dict((v, k) for k, v in _expo2prefix.items())
+
+    number = models.ForeignKey(FloatValue, on_delete=models.CASCADE)
+    expo = models.IntegerField(choices=_expo2prefix.items())
+    unit = models.ForeignKey(StringValue, on_delete=models.CASCADE)
+    value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
+
+    @property
+    def value(self):
+        return [self.number.value, self.expo, self.unit.value]
+
+    def __str__(self):
+        return f"{self.number} {self._expo2prefix[self.expo]}{self.unit}"
+
+    @classmethod
+    def get(cls, value):
+        obj, _ = cls.objects.get_or_create(
+            number=FloatValue.get(value[0]),
+            expo=value[1],
+            unit=StringValue.get(value[2])
+        )
+        return obj
+
+    @classmethod
+    def _populate_queryset(cls, owners):
+        return (
+            (owner, key, (number, expo, value))
+            for owner, key, number, expo, value in cls.objects.filter(value_in_pairs__owner__in=owners)
+            .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "number__value", "expo", "unit__value")
+        )
+
+    @classmethod
+    def _parse_lookup(cls, key, op, value):
+        number, expo, unit = value
+        value_lookup = "number__value" + cls._comparison_operators[op]
+        q = reduce(
+            lambda x, y: x | y,
+            (models.Q(**{value_lookup: number * (10 ** (expo - e))}, expo=e) for e in cls._expo2prefix)
+        )
+        return cls.objects.filter(q, value_in_pairs__key__value=key, unit__value=unit) \
+                          .values_list("value_in_pairs__owner_id")
+
+
 # ---------- #
 # KVP model #
 # ---------- #
@@ -90,7 +138,7 @@ class Dict(models.Model):
 
     @classmethod
     def iter_value_models(cls):
-        return [FloatValue, StringValue]
+        return [FloatValue, StringValue, UnitValue]
 
     @classmethod
     def get_value_model(cls, value):
@@ -98,6 +146,9 @@ class Dict(models.Model):
             return FloatValue
         elif isinstance(value, str):
             return StringValue
+        elif isinstance(value, (list, tuple)) and len(value) == 3 and isinstance(value[0], (int, float)) and isinstance(
+                value[1], int) and isinstance(value[2], str):
+            return UnitValue
         else:
             raise ValueError(f"Couldn't find a Model for {repr(value)}")
 
