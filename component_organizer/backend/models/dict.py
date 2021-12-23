@@ -168,18 +168,6 @@ class Dict(models.Model):
     def iter_value_models(cls):
         return [FloatValue, StringValue, UnitValue]
 
-    @classmethod
-    def get_value_model(cls, value):
-        if isinstance(value, (int, float)):
-            return FloatValue
-        elif isinstance(value, str):
-            return StringValue
-        elif isinstance(value, (list, tuple)) and len(value) == 3 and isinstance(value[0], (int, float)) and isinstance(
-                value[1], int) and isinstance(value[2], str):
-            return UnitValue
-        else:
-            raise ValueError(f"Couldn't find a Model for {repr(value)}")
-
     class Meta:
         abstract = True
 
@@ -218,7 +206,7 @@ class Dict(models.Model):
                 (key, value) for _, key, value in ValueModel._populate_queryset([self])
             )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> _SingleValue:
         if self._data is None:
             self.populate()
 
@@ -227,10 +215,8 @@ class Dict(models.Model):
         else:
             return self._data[key]
 
-    def __setitem__(self, key, value):
-        ValueModel = self.get_value_model(value)
-        wrapped_value = ValueModel.get(value)
-        wrapped_value = {"value_id": wrapped_value.id, "value_type": ValueModel.content_type()}
+    def __setitem__(self, key: str, value: _SingleValue):
+        wrapped_value = {"value_id": value.id, "value_type": value.content_type()}
 
         if self._data is None:
             self.populate()
@@ -242,7 +228,7 @@ class Dict(models.Model):
 
         self._data[key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str):
         if self._data is None:
             self.populate()
 
@@ -270,7 +256,7 @@ class Dict(models.Model):
 
         return self._data.items()
 
-    def __contains__(self, key):
+    def __contains__(self, key: str):
         if self._data is None:
             self.populate()
 
