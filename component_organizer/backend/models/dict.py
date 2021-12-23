@@ -124,9 +124,9 @@ class UnitValue(_SingleValue):
     @classmethod
     def _populate_queryset(cls, owners):
         return (
-            (owner, key, (number, expo, value))
-            for owner, key, number, expo, value in cls.objects.filter(value_in_pairs__owner__in=owners)
-            .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "number__value", "expo", "unit__value")
+            (owner, key, cls(id=id_, number=FloatValue(id=number_id, value=number_value), expo=expo, unit=StringValue(id=unit_id, value=unit_value)))
+            for owner, key, id_, number_id, number_value, expo, unit_id, unit_value in cls.objects.filter(value_in_pairs__owner__in=owners)
+            .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "id", "number_id", "number__value", "expo", "unit_id", "unit__value")
         )
 
     @classmethod
