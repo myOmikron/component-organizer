@@ -44,6 +44,26 @@ class _SingleValue(models.Model):
         return obj
 
     @classmethod
+    def bulk_get(cls, values: Iterable) -> dict:
+        """
+        A more efficient alternative to get when requesting multiple values at once.
+
+        :param values: List of values to get
+        :type values: iterable
+        :return: dict from argument value to Model instance
+        :rtype: dict
+        """
+        result = dict((key, None) for key in values)
+
+        for value in cls.objects.filter(value__in=values):
+            result[value.value] = value
+
+        for value in cls.objects.bulk_create(cls(value=key) for key, value in result.items() if value is None):
+            result[value.value] = value
+
+        return result
+
+    @classmethod
     def content_type(cls):
         """
         Get this class' associated ContentType lazily.
@@ -237,6 +257,29 @@ class Dict(models.Model):
         else:
             KeyValuePair.objects.filter(owner=self, key__value=key).delete()
             del self._data[key]
+
+    def update(self, data, **kwargs):
+        """
+        A more efficient alternative to __setitem__ when setting multiple at once.
+
+        :param data: A mapping from strings to SingleValues
+        :type data: anything convertable into a dict
+        """
+        fields = dict(data, **kwargs)
+
+        existing_kvps = list(KeyValuePair.objects.filter(owner=self, key__value__in=fields.keys()).select_related("key"))
+        for kvp in existing_kvps:
+            kvp.value = fields[kvp.key.value]
+            del fields[kvp.key.value]
+        KeyValuePair.objects.bulk_update(existing_kvps, ("value_type", "value_id"))
+
+        new_kvps = []
+        keys = StringValue.bulk_get(fields.keys())
+        for key in fields:
+            new_kvps.append(KeyValuePair(owner=self, value=fields[key], key=keys[key]))
+        KeyValuePair.objects.bulk_create(new_kvps)
+
+        self._data.update(fields)
 
     def keys(self):
         if self._data is None:
