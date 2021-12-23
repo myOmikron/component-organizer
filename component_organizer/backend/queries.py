@@ -1,4 +1,5 @@
 import re
+from functools import reduce
 from typing import Iterator
 
 from django.db.models import Count, QuerySet
@@ -85,14 +86,23 @@ def _parse_lookup(string: str, queried_keys: set = None) -> QuerySet:
         op = comparator.group()
         value = string[b:].strip()
 
-    try:
-        value = float(value)
-    except ValueError:
-        pass
-
     if queried_keys is not None:
         queried_keys.add(key)
-    return Dict.get_value_model(value)._parse_lookup(key, op, value)
+
+    queries = []
+    for ValueModel in Dict.iter_value_models():
+        try:
+            converted_value = ValueModel.convert(value)
+        except ValueError or TypeError:
+            continue
+
+        try:
+            parsed_query = ValueModel._parse_lookup(key, op, converted_value)
+        except ValueError or KeyError:
+            continue
+
+        queries.append(parsed_query)
+    return reduce(QuerySet.union, queries)
 
 
 def _parse_bracket(string_iter: Iterator[str], queried_keys: set = None) -> QuerySet:

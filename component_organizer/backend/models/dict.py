@@ -31,6 +31,19 @@ class _SingleValue(models.Model):
         return str(self.value)
 
     @classmethod
+    def convert(cls, string: str):
+        """
+        Convert a string into a value usable by this class
+
+        :param string: an input string to parse
+        :type string: str
+        :return: A parsed value, _parse_lookup, get, bulk_get can work with
+        :rtype: whatever this Model is for
+        :raises ValueError: when the string can't be converted
+        """
+        return string
+
+    @classmethod
     def get(cls, value):
         """
         Convert a python primitive to its model instance
@@ -115,6 +128,10 @@ class StringValue(_SingleValue):
 class FloatValue(_SingleValue):
     value = models.FloatField(default=0, unique=True)
 
+    @classmethod
+    def convert(cls, string: str):
+        return float(string)
+
 
 class UnitValue(_SingleValue):
     _expo2prefix = {-24: "y", -21: "z", -18: "a", -15: "f", -12: "p", -9: "n", -6: "u", -3: "m", -2: "c", -1: "d",
@@ -133,6 +150,10 @@ class UnitValue(_SingleValue):
         return f"{self.number} {self._expo2prefix[self.expo]}{self.unit}"
 
     @classmethod
+    def convert(cls, string: str):
+        raise NotImplementedError
+
+    @classmethod
     def get(cls, value):
         obj, _ = cls.objects.get_or_create(
             number=FloatValue.get(value[0]),
@@ -140,6 +161,10 @@ class UnitValue(_SingleValue):
             unit=StringValue.get(value[2])
         )
         return obj
+
+    @classmethod
+    def bulk_get(cls, values: Iterable) -> dict:
+        raise NotImplementedError
 
     @classmethod
     def _populate_queryset(cls, owners):
