@@ -1,4 +1,5 @@
 from functools import reduce
+from typing import Iterable, Any
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -8,9 +9,11 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 # ------------ #
 # Value models #
 # ------------ #
+
+
 class _SingleValue(models.Model):
     value: models.Field = NotImplemented
-    value_in_pairs: GenericRelation = NotImplemented
+    value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
     _content_type: ContentType = None
 
     _comparison_operators = {
@@ -28,43 +31,69 @@ class _SingleValue(models.Model):
         return str(self.value)
 
     @classmethod
-    def content_type(cls):
-        if cls._content_type is None:
-            cls._content_type = ContentType.objects.get_for_model(cls)
-        return cls._content_type
-
-    @classmethod
     def get(cls, value):
         """
         Convert a python primitive to its model instance
+
+        :param value: python value to convert into a model instance
+        :type value: whatever this Model is for
+        :return: Model instance storing the requested value
+        :rtype: instance of this Model
         """
         obj, _ = cls.objects.get_or_create(value=value)
         return obj
 
     @classmethod
-    def _populate_queryset(cls, owners):
+    def content_type(cls):
         """
-        :rtype: iterator of (owner: int, key: str, value: Any) tuples
+        Get this class' associated ContentType lazily.
+        :return: The ContentType to the called on class
+        :rtype: ContentType
         """
-        return cls.objects.filter(value_in_pairs__owner__in=owners) \
-            .values_list("value_in_pairs__owner_id",
-                         "value_in_pairs__key__value",
-                         "value")
+        if cls._content_type is None:
+            cls._content_type = ContentType.objects.get_for_model(cls)
+        return cls._content_type
 
     @classmethod
-    def _parse_lookup(cls, key, op, value):
+    def _populate_queryset(cls, owners: list) -> Iterable:
+        """
+        Retrieve all values of this class for a list of Dicts
+
+        :param owners: Dicts to populate
+        :type owners: list of Dict
+        :return: Adjusted queryset of Dict as primary key, key as string and value as Model instance
+        :rtype: generator of (owner: int, key: str, value: _SingleValue) tuples
+        """
+        return (
+            (owner, key, cls(id=id_, value=value))
+            for owner, key, id_, value in cls.objects.filter(value_in_pairs__owner__in=owners)
+            .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "id", "value")
+        )
+
+    @classmethod
+    def _parse_lookup(cls, key: str, op: str, value: Any) -> models.QuerySet:
+        """
+        Create a queryset to lookup items which have a key and matching value
+
+        :param key: key whose value to lookup
+        :type key: str
+        :param op: lookup operator to use
+        :type op: str
+        :param value: value to compare with
+        :type value: whatever this Model is for
+        :return: A queryset of matching Items' ids
+        :rtype: queryset of Item ids
+        """
         return cls.objects.filter(value_in_pairs__key__value=key, **{f"value{cls._comparison_operators[op]}": value}) \
                           .values_list("value_in_pairs__owner_id")
 
 
 class StringValue(_SingleValue):
     value = models.CharField(max_length=255, default="", unique=True)
-    value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
 
 
 class FloatValue(_SingleValue):
     value = models.FloatField(default=0, unique=True)
-    value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
 
 
 class UnitValue(_SingleValue):
@@ -75,7 +104,6 @@ class UnitValue(_SingleValue):
     number = models.ForeignKey(FloatValue, on_delete=models.CASCADE)
     expo = models.IntegerField(choices=_expo2prefix.items())
     unit = models.ForeignKey(StringValue, on_delete=models.CASCADE)
-    value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
 
     @property
     def value(self):
