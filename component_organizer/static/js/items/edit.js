@@ -59,7 +59,7 @@ class EditItem extends React.Component {
         this.state= {
             id: -1,
             category: -1,
-            fields: {},
+            fields: {},  // {value: null, type: "stringvalue"}
             template: {
                 id: -1,
                 name: "Not loaded yet",
@@ -94,8 +94,8 @@ class EditItem extends React.Component {
                     e("td", {}, e(LazyAutocomplete, {
                         id: key,
                         url: "/api/common_values/" + key,
-                        value: this.state.fields[key],
-                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
+                        value: this.state.fields[key].value,
+                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: {value, type: state.fields[key].type}}}))}
                     })),
                 ])),
             ]),
@@ -106,8 +106,8 @@ class EditItem extends React.Component {
                     e("td", {}, e(LazyAutocomplete, {
                         id: key,
                         url: "/api/common_values/" + key,
-                        value: this.state.fields[key],
-                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: parse(value)}}))}
+                        value: this.state.fields[key].value,
+                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: {value, type: state.fields[key].type}}}))}
                     })),
                     e("td", {}, e("button", {
                         onClick() {

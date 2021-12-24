@@ -53,7 +53,8 @@ class ItemView(View):
                 "name": item.template.name_format,
                 "fields": item.template.get_fields()
             } if expand_template else item.template_id,
-            "fields": dict(item.items())
+            "fields": dict((key, {"value": model.value, "type": model.content_type().model})
+                           for key, model in item.items()),
         }
 
     def post(self, request, *args, **kwargs):

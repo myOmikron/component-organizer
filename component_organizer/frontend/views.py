@@ -7,7 +7,7 @@ from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView, CreateView
 
-from backend.models import Container, ItemLocation, Item, ItemTemplate
+from backend.models import Container, Item, ItemTemplate, StringValue
 from backend.models.base import _TreeNode
 from backend.queries import filter_items
 
@@ -83,7 +83,8 @@ class ItemListView(TemplateView):
         # Format items for react
         items = []
         for item in Item.populate_queryset(item_query):
-            items.append({"name": str(item), "amount": 0, "url": item.url, "fields": item._data})
+            items.append({"name": str(item), "amount": 0, "url": item.url,
+                          "fields": dict((key, model.value) for key, model in item.items())})
 
         # Retrieve all keys used by any of the items
         # and all keys all items have in common
