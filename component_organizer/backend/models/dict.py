@@ -57,12 +57,12 @@ class _SingleValue(models.Model):
         return obj
 
     @classmethod
-    def bulk_get(cls, values: Iterable) -> dict:
+    def bulk_get(cls, values: list) -> dict:
         """
         A more efficient alternative to get when requesting multiple values at once.
 
         :param values: List of values to get
-        :type values: iterable
+        :type values: list
         :return: dict from argument value to Model instance
         :rtype: dict
         """
@@ -304,7 +304,8 @@ class Dict(models.Model):
             new_kvps.append(KeyValuePair(owner=self, value=fields[key], key=keys[key]))
         KeyValuePair.objects.bulk_create(new_kvps)
 
-        self._data.update(fields)
+        if self._data is not None:
+            self._data.update(fields)
 
     def keys(self):
         if self._data is None:

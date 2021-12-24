@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -44,6 +45,19 @@ class GetValues(View):
 class ItemView(View):
 
     @staticmethod
+    def _set_fields(item: Item, fields: dict):
+        content_types = dict((ct.model, ct.model_class()) for ct in ContentType.objects.filter(model__in=set(value["type"] for value in fields.values()), app_label="backend"))
+        fields_by_type = dict((type_, []) for type_ in content_types)
+        for key, value in fields.items():
+            fields_by_type[value["type"]].append((key, value["value"]))
+        fields = {}
+        for type_ in fields_by_type:
+            values = content_types[type_].bulk_get([v for _, v in fields_by_type[type_]])
+            for key, value in fields_by_type[type_]:
+                fields[key] = values[value]
+        item.update(fields)
+
+    @staticmethod
     def item2dict(item: Item, expand_template=True):
         return {
             "id": item.id,
@@ -71,9 +85,7 @@ class ItemView(View):
             return JsonResponse({"success": False, "error": "Unknown category"}, status=404)
 
         item = Item.objects.create(category_id=data["category"], template_id=data["template"])
-        for key, value in data["fields"].items():
-            item[key] = value
-        item.save()
+        self._set_fields(item, data["fields"])
 
         return JsonResponse(
             {"success": True, "result": self.item2dict(item)},
@@ -111,8 +123,7 @@ class ItemView(View):
         if "category" in data and Category.objects.filter(id=data["category"]).exists():
             item.category_id = data["category"]
         if "fields" in data and isinstance(data["fields"], dict):
-            for key, value in data["fields"].items():
-                item[key] = value
+            self._set_fields(item, data["fields"])
             current_fields = list(data["fields"].keys()) + item.template.get_fields()
             for key in list(item.keys()):
                 if key not in current_fields:
