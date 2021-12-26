@@ -135,7 +135,8 @@ class ItemView(View):
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
-        check_params(data, [("category", int), ("template", int), ("fields", dict)])
+        if error := check_params(data, [("category", int), ("template", int), ("fields", dict)]):
+            return error
 
         if not ItemTemplate.objects.filter(id=data["template"]).exists():
             return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
