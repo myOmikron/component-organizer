@@ -84,10 +84,15 @@ class EditItem extends React.Component {
         }
         const setState = this.setState.bind(this);
 
+        const formatFields = {};
+        for (const [key, {value}] of Object.entries(this.state.fields)) {
+            formatFields[key] = value;
+        }
+
         return e("div", {
             className: "flex-vertical",
         }, [
-            e("h1", {}, format(this.state.template.name, {data: this.state.fields})),
+            e("h1", {}, format(this.state.template.name, {data: formatFields})),
             e("table", {}, [
                 ...this.state.template.fields.map((key) => e("tr", {key}, [
                     e("td", {}, e("label", {htmlFor: key}, key)),

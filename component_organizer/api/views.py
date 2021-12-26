@@ -1,7 +1,6 @@
 import json
 from collections import defaultdict
 
-from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
