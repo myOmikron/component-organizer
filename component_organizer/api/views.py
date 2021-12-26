@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
@@ -7,7 +8,7 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.csrf import csrf_exempt
 
-from backend.models import StringValue, ItemTemplate, Item, Category
+from backend.models import StringValue, ItemTemplate, Item, Category, Dict
 from backend import queries
 from backend.queries import filter_items
 
@@ -20,6 +21,9 @@ def check_params(data: dict, parameters: list[tuple[str, type]]):
             return JsonResponse({"success": False, "error": "Parameter '{name}' must be of type '{dtype}'"}, status=400)
     else:
         return None
+
+
+value_types = dict((ValueModel.api_name, ValueModel) for ValueModel in Dict.iter_value_models())
 
 
 class ApiAuth(LoginRequiredMixin, View):
@@ -46,13 +50,12 @@ class ItemView(View):
 
     @staticmethod
     def _set_fields(item: Item, fields: dict):
-        content_types = dict((ct.model, ct.model_class()) for ct in ContentType.objects.filter(model__in=set(value["type"] for value in fields.values()), app_label="backend"))
-        fields_by_type = dict((type_, []) for type_ in content_types)
+        fields_by_type = defaultdict(list)
         for key, value in fields.items():
             fields_by_type[value["type"]].append((key, value["value"]))
         fields = {}
         for type_ in fields_by_type:
-            values = content_types[type_].bulk_get([v for _, v in fields_by_type[type_]])
+            values = value_types[type_].bulk_get([v for _, v in fields_by_type[type_]])
             for key, value in fields_by_type[type_]:
                 fields[key] = values[value]
         item.update(fields)
@@ -67,7 +70,7 @@ class ItemView(View):
                 "name": item.template.name_format,
                 "fields": item.template.get_fields()
             } if expand_template else item.template_id,
-            "fields": dict((key, {"value": model.value, "type": model.content_type().model})
+            "fields": dict((key, {"value": model.value, "type": model.api_name})
                            for key, model in item.items()),
         }
 

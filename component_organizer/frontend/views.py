@@ -7,7 +7,7 @@ from django.http import HttpRequest, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView, CreateView
 
-from backend.models import Container, Item, ItemTemplate, StringValue
+from backend.models import Container, Item, ItemTemplate
 from backend.models.base import _TreeNode
 from backend.queries import filter_items
 

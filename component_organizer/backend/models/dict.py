@@ -1,5 +1,4 @@
 import re
-from functools import reduce
 from typing import Iterable, Any
 
 from django.db import models
@@ -11,8 +10,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 # Value models #
 # ------------ #
 
-
 class _SingleValue(models.Model):
+    api_name: str = NotImplemented
     value: models.Field = NotImplemented
     value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
     _content_type: ContentType = None
@@ -123,10 +122,12 @@ class _SingleValue(models.Model):
 
 
 class StringValue(_SingleValue):
+    api_name = "string"
     value = models.CharField(max_length=255, default="", unique=True)
 
 
 class FloatValue(_SingleValue):
+    api_name = "number"
     value = models.FloatField(default=0, unique=True)
 
     @classmethod
@@ -135,8 +136,10 @@ class FloatValue(_SingleValue):
 
 
 class UnitValue(_SingleValue):
+    api_name = "unit"
     number = models.ForeignKey(FloatValue, on_delete=models.CASCADE)
     unit = models.ForeignKey(StringValue, on_delete=models.CASCADE)
+    _pattern = re.compile(r"^([+-]?(?:\d+|\d*\.\d+)(?:e[+-]?\d+)?) *(.+)$")
 
     @property
     def value(self):
@@ -150,10 +153,10 @@ class UnitValue(_SingleValue):
         """
         :return: (number: float, unit: str)
         """
-        if match := re.match(r"^([+-]?(?:\d+|\d*\.\d+)(?:e[+-]?\d+)?) *(.+)$", string):
+        if match := cls._pattern.match(string):
             number = float(match.group(1))
             unit = match.group(2)
-            return number, unit
+            return [number, unit]
         else:
             raise ValueError(f"{repr(string)} doesn't match regex")
 
@@ -171,6 +174,7 @@ class UnitValue(_SingleValue):
         units = StringValue.bulk_get([unit for _, _, unit in values])
         objects = {}
         for number, unit in values:
+            # TODO find better solution than single get_or_creates
             obj, _ = cls.objects.get_or_create(
                 number=numbers[number],
                 unit=units[unit],
