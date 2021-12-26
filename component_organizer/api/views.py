@@ -48,14 +48,55 @@ class GetValues(View):
 class ItemView(View):
 
     @staticmethod
-    def _set_fields(item: Item, fields: dict):
+    def _prepare_fields(fields: dict):
+        """
+        Regroup fields parameter and check it for validity
+        :param fields: fields dict to set for an item
+        :type fields: dict
+        :return: prepared fields, potential error response
+        :rtype: (dict, JsonResponse)-tuple
+        """
         fields_by_type = defaultdict(list)
-        for key, value in fields.items():
-            fields_by_type[value["type"]].append((key, value["value"]))
+        errors = []
+        for key, type_n_value in fields.items():
+            if not isinstance(type_n_value, dict):
+                errors.append((key, "Field must be object with 'type' and 'value'"))
+
+            if "type" not in type_n_value:
+                errors.append((key, "Missing type"))
+                continue
+            type_ = type_n_value["type"]
+
+            if "value" not in type_n_value:
+                errors.append((key, "Missing value"))
+                continue
+            value = type_n_value["value"]
+
+            if type_ not in value_types:
+                errors.append((key, f"Unknown type: {repr(type_)}"))
+                continue
+            model = value_types[type_]
+
+            try:
+                fields_by_type[model].append((key, model.convert(value)))
+            except ValueError:
+                errors.append((key, f"Invalid value: {repr(value)}"))
+        return fields_by_type, errors
+
+    @staticmethod
+    def _set_fields(item: Item, fields_by_type: dict):
+        """
+        Perform the bulk lookups of ValueModels and set them to an Item
+
+        :param item: Item instance to set fields for
+        :type item: Item
+        :param fields_by_type: prepared dict of fields as returned by _prepare_fields
+        :type fields_by_type: dict
+        """
         fields = {}
-        for type_ in fields_by_type:
-            values = value_types[type_].bulk_get([v for _, v in fields_by_type[type_]])
-            for key, value in fields_by_type[type_]:
+        for ValueModel, key_value_pairs in fields_by_type.items():
+            values = ValueModel.bulk_get([value for _, value in key_value_pairs])
+            for key, value in key_value_pairs:
                 fields[key] = values[value]
         item.update(fields)
 
@@ -73,27 +114,6 @@ class ItemView(View):
                            for key, model in item.items()),
         }
 
-    def post(self, request, *args, **kwargs):
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=405)
-
-        check_params(data, [("category", int), ("template", int), ("fields", dict)])
-
-        if not ItemTemplate.objects.filter(id=data["template"]).exists():
-            return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
-        if not Category.objects.filter(id=data["category"]).exists():
-            return JsonResponse({"success": False, "error": "Unknown category"}, status=404)
-
-        item = Item.objects.create(category_id=data["category"], template_id=data["template"])
-        self._set_fields(item, data["fields"])
-
-        return JsonResponse(
-            {"success": True, "result": self.item2dict(item)},
-            status=200
-        )
-
     def get(self, request, pk=None, *args, **kwargs):
         if pk is None:
             items = Item.objects.all()
@@ -109,6 +129,31 @@ class ItemView(View):
             except Item.DoesNotExist:
                 return JsonResponse({"success": False, "error": "Unknown item"}, status=404)
 
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
+
+        check_params(data, [("category", int), ("template", int), ("fields", dict)])
+
+        if not ItemTemplate.objects.filter(id=data["template"]).exists():
+            return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
+        if not Category.objects.filter(id=data["category"]).exists():
+            return JsonResponse({"success": False, "error": "Unknown category"}, status=404)
+        fields_by_type, errors = self._prepare_fields(data["fields"])
+        if errors:
+            return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
+                                 "errors": dict(errors)}, status=400)
+
+        item = Item.objects.create(category_id=data["category"], template_id=data["template"])
+        self._set_fields(item, data["fields"])
+
+        return JsonResponse(
+            {"success": True, "result": self.item2dict(item)},
+            status=200
+        )
+
     def put(self, request, *args, pk=None, **kwargs):
         try:
             item: Item = Item.objects.get(id=pk)
@@ -118,14 +163,27 @@ class ItemView(View):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=405)
+            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
-        if "template" in data and ItemTemplate.objects.filter(id=data["template"]).exists():
+        if "template" in data and not ItemTemplate.objects.filter(id=data["template"]).exists():
+            return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
+        if "category" in data and not Category.objects.filter(id=data["category"]).exists():
+            return JsonResponse({"success": False, "error": "Unknown category"}, status=404)
+        if "fields" in data:
+            if not isinstance(data["fields"], dict):
+                return JsonResponse({"success": False, "error": "Fields must be an object"}, status=400)
+            else:
+                fields_by_type, errors = self._prepare_fields(data["fields"])
+                if errors:
+                    return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
+                                         "errors": dict(errors)}, status=400)
+
+        if "template" in data:
             item.template_id = data["template"]
-        if "category" in data and Category.objects.filter(id=data["category"]).exists():
+        if "category" in data:
             item.category_id = data["category"]
-        if "fields" in data and isinstance(data["fields"], dict):
-            self._set_fields(item, data["fields"])
+        if "fields" in data:
+            self._set_fields(item, fields_by_type)
             current_fields = list(data["fields"].keys()) + item.template.get_fields()
             for key in list(item.keys()):
                 if key not in current_fields:
@@ -162,7 +220,7 @@ class ItemTemplateView(View):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=405)
+            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
         if response := check_params(data, [("name", str), ("parent", int)]) is not None:
             return response
@@ -203,7 +261,7 @@ class ItemTemplateView(View):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=405)
+            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
         if "item_name" in data and isinstance(data["item_name"], str):
             template.name_format = data["item_name"]
