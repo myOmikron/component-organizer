@@ -1,3 +1,4 @@
+import re
 from functools import reduce
 from typing import Iterable, Any
 
@@ -134,55 +135,62 @@ class FloatValue(_SingleValue):
 
 
 class UnitValue(_SingleValue):
-    _expo2prefix = {-24: "y", -21: "z", -18: "a", -15: "f", -12: "p", -9: "n", -6: "u", -3: "m", -2: "c", -1: "d",
-                    24: "Y", 21: "Z", 18: "E", 15: "P", 12: "T", 9: "G", 6: "M", 3: "k", 2: "h", 1: "D", 0: ""}
-    _prefix2expo = dict((v, k) for k, v in _expo2prefix.items())
-
     number = models.ForeignKey(FloatValue, on_delete=models.CASCADE)
-    expo = models.IntegerField(choices=_expo2prefix.items())
     unit = models.ForeignKey(StringValue, on_delete=models.CASCADE)
 
     @property
     def value(self):
-        return [self.number.value, self.expo, self.unit.value]
+        return [self.number.value, self.unit.value]
 
     def __str__(self):
-        return f"{self.number} {self._expo2prefix[self.expo]}{self.unit}"
+        return f"{self.number} {self.unit}"
 
     @classmethod
     def convert(cls, string: str):
-        raise NotImplementedError
+        """
+        :return: (number: float, unit: str)
+        """
+        if match := re.match(r"^([+-]?(?:\d+|\d*\.\d+)(?:e[+-]?\d+)?) *(.+)$", string):
+            number = float(match.group(1))
+            unit = match.group(2)
+            return number, unit
+        else:
+            raise ValueError(f"{repr(string)} doesn't match regex")
 
     @classmethod
     def get(cls, value):
         obj, _ = cls.objects.get_or_create(
             number=FloatValue.get(value[0]),
-            expo=value[1],
-            unit=StringValue.get(value[2])
+            unit=StringValue.get(value[1])
         )
         return obj
 
     @classmethod
     def bulk_get(cls, values: Iterable) -> dict:
-        raise NotImplementedError
+        numbers = FloatValue.bulk_get([number for number, _, _ in values])
+        units = StringValue.bulk_get([unit for _, _, unit in values])
+        objects = {}
+        for number, unit in values:
+            obj, _ = cls.objects.get_or_create(
+                number=numbers[number],
+                unit=units[unit],
+            )
+            objects[(number, unit)] = obj
+        return objects
 
     @classmethod
     def _populate_queryset(cls, owners):
         return (
-            (owner, key, cls(id=id_, number=FloatValue(id=number_id, value=number_value), expo=expo, unit=StringValue(id=unit_id, value=unit_value)))
-            for owner, key, id_, number_id, number_value, expo, unit_id, unit_value in cls.objects.filter(value_in_pairs__owner__in=owners)
-            .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "id", "number_id", "number__value", "expo", "unit_id", "unit__value")
+            (owner, key, cls(id=id_, number=FloatValue(id=number_id, value=number_value), unit=StringValue(id=unit_id, value=unit_value)))
+            for owner, key, id_, number_id, number_value, unit_id, unit_value in cls.objects.filter(value_in_pairs__owner__in=owners)
+            .values_list("value_in_pairs__owner_id", "value_in_pairs__key__value", "id", "number_id", "number__value", "unit_id", "unit__value")
         )
 
     @classmethod
     def _parse_lookup(cls, key, op, value):
-        number, expo, unit = value
-        value_lookup = "number__value" + cls._comparison_operators[op]
-        q = reduce(
-            lambda x, y: x | y,
-            (models.Q(**{value_lookup: number * (10 ** (expo - e))}, expo=e) for e in cls._expo2prefix)
-        )
-        return cls.objects.filter(q, value_in_pairs__key__value=key, unit__value=unit) \
+        number, unit = value
+        value_lookup = {"number__value" + cls._comparison_operators[op]: number}
+        return cls.objects.filter(value_in_pairs__key__value=key, unit__value=unit, **value_lookup) \
                           .values_list("value_in_pairs__owner_id")
 
 
