@@ -68,7 +68,7 @@ class ItemList extends React.Component {
         let queryValue = null;
         let queryReplace = strippedPosition;
 
-        const comparator = strippedQuery.match(/(?:=|<=|>=|<|>)/d);
+        const comparator = strippedQuery.match(/=|<=|>=|<|>/d);
         if (comparator) {
             const [start, end] = comparator.indices[0];
             queryKey = strippedQuery.substring(0, start).trim();

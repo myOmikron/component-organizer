@@ -6,11 +6,6 @@ import {LazyAutocomplete} from "../textinput.js";
 
 const e = React.createElement;
 
-function parse(string) {
-    const number = parseFloat(("" + string).match(/^[+-]?\d*(?:\.\d+)?(?:e[+-]?\d+)?$/));
-    return isNaN(number) ? string : number;
-}
-
 function format(string, kwargs) {
     return string.replaceAll(/{+[^}]*}+/g, function(match) {
         const leadingBrackets = match.match(/^{+/)[0].length;
@@ -27,7 +22,7 @@ function format(string, kwargs) {
 
             // get the actual value
             let value = kwargs;
-            const steps = fieldName.match(/(?:^[^.\[]+)|(?:\.\w+)|(?:\[\w+])/g);
+            const steps = fieldName.match(/^[^.\[]+|\.\w+|\[\w+]/g);
             for (let i = 0; i < steps.length; i++) {
                 let step = steps[i];
                 if (step[0] === ".") {
@@ -59,7 +54,7 @@ class EditItem extends React.Component {
         this.state= {
             id: -1,
             category: -1,
-            fields: {},  // {value: null, type: "stringvalue"}
+            fields: {},  // {value: null, type: "string"}
             template: {
                 id: -1,
                 name: "Not loaded yet",

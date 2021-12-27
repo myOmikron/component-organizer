@@ -98,7 +98,7 @@ class EditTemplate extends React.Component {
             e("button", {
                 onClick: function () {
                     request(this.apiEndpoint, "PUT", "json", {
-                        item_name: this.state.item_name, fields: Object.fromEntries(Object.entries(this.state.fields).filter(([name, type]) => this.state.ownFields.includes(name)))
+                        item_name: this.state.item_name, fields: Object.fromEntries(Object.entries(this.state.fields).filter(([name, _]) => this.state.ownFields.includes(name)))
                     })
                     .then(({success, result}) => {
                         if (success) {
@@ -138,7 +138,7 @@ class NewTemplate extends React.Component {
 
     send() {
         request("/api/template", "PUT", "json", {...this.state, parent: this.props.parent})
-        .then(({success, result, error}) => {
+        .then(({success, result}) => {
             if (success) {
                 window.location = "/template/" + result.id;
             } else {

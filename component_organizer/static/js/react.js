@@ -1,2 +1,2 @@
-export * from './local-react/react.js';
-export {default} from './local-react/react.js';
+export * from './local-react/react.dev.js';
+export {default} from './local-react/react.dev.js';
