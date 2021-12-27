@@ -112,7 +112,7 @@ class ItemView(View):
             "template": {
                 "id": item.template.id,
                 "name": item.template.name_format,
-                "fields": item.template.get_fields()
+                "fields": dict((key, value.api_name) for key, value in item.template.get_fields().items())
             } if expand_template else item.template_id,
             "fields": dict((key, {"value": model.value, "type": model.api_name})
                            for key, model in item.items()),

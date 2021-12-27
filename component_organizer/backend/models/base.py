@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import reduce
-from typing import List
 
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.core.validators import MinValueValidator
 
@@ -43,7 +43,7 @@ class _TreeNode(models.Model):
         return self.parent_id == self.id
 
     @property
-    def obj_path(self) -> List["_TreeNode"]:
+    def obj_path(self) -> list["_TreeNode"]:
         """
         Return the absolute path as list of objects
 
@@ -63,7 +63,7 @@ class _TreeNode(models.Model):
             path = container.obj_path + path
         return path
 
-    def get_children(self, depth: int = 1) -> List["_TreeNode"]:
+    def get_children(self, depth: int = 1) -> list["_TreeNode"]:
         """
         Query all children up to a given depth and return list of immediate children.
         Those children have an extra attribute `children` which holds their children.
@@ -115,18 +115,27 @@ class Category(_TreeNode):
 
 
 class ItemTemplate(_TreeNode):
-    fields = models.ManyToManyField(StringValue, blank=True)
     name_format = models.CharField(max_length=255, default="", blank="")
     """To get an item's name, this string will be formatted with the item's variables"""
 
-    def get_fields(self) -> List[str]:
+    def get_fields(self) -> dict[str, "_SingleValue"]:
         """
-        Return a list of fields an item of this category must have.
+        Return a dict of field names to field types an item of this template must have.
         """
-        fields = set()
+        fields = {}
         for obj in self.obj_path:
-            fields.update(value for value, in obj.fields.values_list("value"))
-        return list(fields)
+            for field in ItemTemplateField.objects.filter(template=obj).select_related("key", "value_type"):
+                fields[field.key.value] = field.value_type.model_class()
+        return fields
+
+
+class ItemTemplateField(models.Model):
+    key = models.ForeignKey(StringValue, on_delete=models.CASCADE)
+    template = models.ForeignKey(ItemTemplate, on_delete=models.CASCADE)
+    value_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.template}.{self.key.value}: {self.value_type.model_class().api_name}"
 
 
 class ItemLocation(models.Model):

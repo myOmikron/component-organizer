@@ -78,7 +78,7 @@ class EditItem extends React.Component {
     render() {
         const nonTempFields = [];
         for (const key in this.state.fields) {
-            if (!this.state.template.fields.includes(key)) {
+            if (!this.state.template.fields.hasOwnProperty(key)) {
                 nonTempFields.push(key);
             }
         }
@@ -94,7 +94,7 @@ class EditItem extends React.Component {
         }, [
             e("h1", {}, format(this.state.template.name, {data: formatFields})),
             e("table", {}, [
-                ...this.state.template.fields.map((key) => e("tr", {key}, [
+                ...Object.keys(this.state.template.fields).map((key) => e("tr", {key}, [
                     e("td", {}, e("label", {htmlFor: key}, key)),
                     e("td", {}, e(LazyAutocomplete, {
                         id: key,
