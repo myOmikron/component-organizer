@@ -7,7 +7,7 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.csrf import csrf_exempt
 
-from backend.models import StringValue, ItemTemplate, Item, Category
+from backend.models import StringValue, ItemTemplate, Item, Category, ItemTemplateField
 from backend import queries
 from backend.queries import filter_items
 
@@ -157,13 +157,10 @@ class ItemView(View):
         if "category" in data and not Category.objects.filter(id=data["category"]).exists():
             return JsonResponse({"success": False, "error": "Unknown category"}, status=404)
         if "fields" in data:
-            if not isinstance(data["fields"], dict):
-                return JsonResponse({"success": False, "error": "Fields must be an object"}, status=400)
-            else:
-                fields_by_type, errors = self._prepare_fields(data["fields"])
-                if errors:
-                    return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
-                                         "errors": dict(errors)}, status=400)
+            fields_by_type, errors = self._prepare_fields(data["fields"])
+            if errors:
+                return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
+                                     "errors": dict(errors)}, status=400)
 
         # Perform actual state changes
         if "template" in data:
@@ -195,35 +192,24 @@ class ItemView(View):
 class ItemTemplateView(View):
 
     @staticmethod
+    def _prepare_fields(fields: dict):
+        result = {}
+        errors = {}
+        keys = StringValue.bulk_get(list(fields.keys()))
+        for key, value in fields.items():
+            if value not in value_types:
+                errors[key] = f"Unknown type: {repr(value)}"
+            else:
+                result[keys[key]] = value_types[value].content_type()
+        return result, errors
+
+    @staticmethod
     def template2dict(template: ItemTemplate):
         return {"id": template.id, "name": template.name,
-                "item_name": template.name_format, "fields": template.get_fields(),
+                "item_name": template.name_format,
+                "fields": dict((key, model.api_name) for key, model in template.get_fields().items()),
                 "parent": {"id": template.parent.id, "name": template.parent.name},
-                "ownFields": [field.value for field in template.fields.all()]}
-
-    def post(self, request, *args, **kwargs):
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
-
-        if response := check_params(data, [("name", str), ("parent", int)]) is not None:
-            return response
-
-        template: ItemTemplate = ItemTemplate.objects.create(
-            name=data["name"],
-            parent_id=data["parent"],
-            name_format=data["item_name"] if "item_name" in data and isinstance(data["item_name"], str) else "",
-        )
-        if "fields" in data and isinstance(data["fields"], list):
-            for field in data["fields"]:
-                if isinstance(field, str):
-                    template.fields.add(StringValue.get(field))
-
-        return JsonResponse(
-            {"success": True, "result": self.template2dict(template)},
-            status=200
-        )
+                "ownFields": list(template.itemtemplatefield_set.values_list("key__value", flat=True))}
 
     def get(self, request, *args, pk=None, **kwargs):
         if pk is None:
@@ -238,24 +224,44 @@ class ItemTemplateView(View):
                 return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
 
     def put(self, request, *args, pk=None, **kwargs):
-        try:
-            template: ItemTemplate = ItemTemplate.objects.get(id=pk)
-        except ItemTemplate.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
+        # Retrieve template or create new one
+        if pk is None:
+            template = ItemTemplate()
+        else:
+            try:
+                template: ItemTemplate = ItemTemplate.objects.get(id=pk)
+            except ItemTemplate.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
 
+        # Parse parameters
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
-        if "item_name" in data and isinstance(data["item_name"], str):
-            template.name_format = data["item_name"]
+        # Check parameters
+        if error := check_params(data, [("name", str), ("item_name", str), ("parent", int), ("fields", dict)], require_all=pk is None):
+            return error
+        if "parent" in data and not ItemTemplate.objects.filter(id=data["parent"]).exists():
+            return JsonResponse({"success": False, "error": "Unknown parent"}, status=404)
         if "fields" in data:
-            template.fields.clear()
-            for field in data["fields"]:
-                if isinstance(field, str):
-                    template.fields.add(StringValue.get(field))
+            fields, errors = self._prepare_fields(data["fields"])
+            if errors:
+                return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
+                                     "errors": errors}, status=400)
+
+        # Perform actual state changes
+        if "name" in data:
+            template.name = data["name"]
+        if "item_name" in data:
+            template.name_format = data["item_name"]
+        if "parent" in data:
+            template.parent_id = data["parent"]
         template.save()
+        if "fields" in data:
+            ItemTemplateField.objects.filter(template=template).delete()
+            ItemTemplateField.objects.bulk_create([ItemTemplateField(template=template, key=key, value_type=value_type)
+                                                   for key, value_type in fields.items()])
 
         return JsonResponse(
             {"success": True, "result": self.template2dict(template)},
