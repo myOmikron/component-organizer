@@ -16,9 +16,8 @@ class EditTemplate extends React.Component {
             id: -1,
             name: "Not loaded yet",
             item_name: "",
-            fields: [],
+            fields: {}, // name: type
             ownFields: [],
-            isOwnField: {},
             parent: {
                 id: -1,
                 name: "",
@@ -28,15 +27,7 @@ class EditTemplate extends React.Component {
 
         this.apiEndpoint = "/api/template/" + this.props.template;
         const setState = this.setState.bind(this);
-        request(this.apiEndpoint).then((state) => {
-            const isOwnField = {};
-            state.fields.map((field) => {isOwnField[field] = false;});
-            state.ownFields.map((field) => {isOwnField[field] = true;});
-            setState({
-                isOwnField,
-                ...state,
-            });
-        });
+        request(this.apiEndpoint).then(setState);
 
         this._addAttrInput = null;
     }
@@ -46,21 +37,14 @@ class EditTemplate extends React.Component {
         const {openTemplate} = this.props;
         const {parent} = this.state;
 
-        const ownFields = this.state.fields.filter((field) => this.state.isOwnField[field]);
-        const parentFields = this.state.fields.filter((field) => !this.state.isOwnField[field]);
+        const ownFields = this.state.ownFields;
+        const parentFields = Object.keys(this.state.fields).filter(field => !this.state.ownFields.includes(field));
 
         function removeField(field) {
             setState(function (state) {
-                if (state.isOwnField[field]) {
-                    const {[field]: _, ...isOwnField} = state.isOwnField;
-                    function filter(item) {
-                        return item !== field;
-                    }
-                    return {
-                        isOwnField,
-                        fields: state.fields.filter(filter),
-                        ownFields: state.ownFields.filter(filter),
-                    }
+                if (state.ownFields.includes(field)) {
+                    const {[field]: _, ...fields} = state.fields;
+                    return {fields, ownFields: state.ownFields.filter(item => item !== field)};
                 } else {
                     return {};
                 }
@@ -68,11 +52,10 @@ class EditTemplate extends React.Component {
         }
         function addField() {
             setState(function (state) {
-                if (!state.isOwnField.hasOwnProperty(state._toAdd)) {
+                if (!state.fields.hasOwnProperty(state._toAdd)) {
                     return {
-                        fields: [...state.fields, state._toAdd],
+                        fields: {...state.fields, [state._toAdd]: "string"},
                         ownFields: [...state.ownFields, state._toAdd],
-                        isOwnField: {...state.isOwnField, [state._toAdd]: true},
                         _toAdd: "",
                     }
                 } else {
@@ -80,7 +63,6 @@ class EditTemplate extends React.Component {
                 }
             });
         }
-
 
         return e("div", {
             className: "flex-vertical",
@@ -115,26 +97,23 @@ class EditTemplate extends React.Component {
             ]),
             e("button", {
                 onClick: function () {
-                    request(this.apiEndpoint, "PUT", "json", {item_name: this.state.item_name, fields: this.state.ownFields})
-                        .then(({success, result}) => {
-                            if (success) {
-                                setState(result);
-                            } else {
-                                console.error("Couldn't save template");
-                            }
-                        });
+                    request(this.apiEndpoint, "PUT", "json", {
+                        item_name: this.state.item_name, fields: Object.fromEntries(Object.entries(this.state.fields).filter(([name, type]) => this.state.ownFields.includes(name)))
+                    })
+                    .then(({success, result}) => {
+                        if (success) {
+                            setState(result);
+                        } else {
+                            // TODO show the error
+                            console.error("Couldn't save template");
+                        }
+                    });
                 }.bind(this),
             }, "Save"),
             e("button", {
                 onClick: function () {
                     request(this.apiEndpoint, "DELETE")
-                        .then(({success}) => {
-                            if (success) {
-                                window.location = "/template/" + this.state.parent.id;
-                            } else {
-                                console.error("Couldn't delete template");
-                            }
-                        });
+                    .then(() => {window.location = "/template/" + this.state.parent.id;});
                 }.bind(this),
             }, "Delete"),
         ]);
@@ -152,14 +131,18 @@ class NewTemplate extends React.Component {
 
         this.state = {
             name: "",
+            item_name: "",
+            fields: {},
         };
     }
 
     send() {
-        request("/api/template", "POST", "json", {name: this.state.name, parent: this.props.parent}).then(({success, result}) => {
+        request("/api/template", "PUT", "json", {...this.state, parent: this.props.parent})
+        .then(({success, result, error}) => {
             if (success) {
                 window.location = "/template/" + result.id;
             } else {
+                // TODO show errors
                 console.error("Couldn't create template");
             }
         });
@@ -173,11 +156,17 @@ class NewTemplate extends React.Component {
                     event.preventDefault();
                     send();
                 }
-            }, e("label", {}, ["Template Name ", e(TextInput, {
-                value: this.state.name,
-                setValue: function (value) {this.setState({name: value});}.bind(this),
-            })])),
-            e("button", {onclick: send}, "Create")
+            }, [
+                e("label", {}, ["Template Name ", e(TextInput, {
+                    value: this.state.name,
+                    setValue: function (value) {this.setState({name: value});}.bind(this),
+                })]),
+                e("label", {}, ["Item Name Template ", e(TextInput, {
+                    value: this.state.item_name,
+                    setValue: function (value) {this.setState({item_name: value});}.bind(this),
+                })])
+            ]),
+            e("button", {onClick: send}, "Create")
         ]);
     }
 }
