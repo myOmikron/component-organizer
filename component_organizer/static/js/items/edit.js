@@ -67,12 +67,50 @@ class EditItem extends React.Component {
             },
             _toAdd: "",
             _reloading: false,
+            _error: null,
+            _errors: {},
         }
 
         this._addAttrInput = null;
         const path = window.location.pathname.split("/");
         this.apiEndpoint = "/api/item/" + path[path.length-1];
         request(this.apiEndpoint).then(this.setState.bind(this));
+
+        this.setState = this.setState.bind(this);
+    }
+
+    renderField(key) {
+        const {setState} = this;
+        const isCustom = !this.state.template.fields.hasOwnProperty(key);
+        const {[key]: field} = this.state.fields;
+        return e(React.Fragment, {}, [
+            e("tr", {key}, [
+                e("td", {}, e("label", {htmlFor: key}, key)),
+                e("td", {}, e(LazyAutocomplete, {
+                    id: key,
+                    url: "/api/common_values/" + key,
+                    value: field ? field.value : "",
+                    setValue(value) {setState(function(state) {
+                        const {[key]: field, ...fields} = state.fields;
+                        if (value !== "" || isCustom) {
+                            fields[key] = {value, type: field ? field.type : state.template.fields[key]};
+                        }
+                        return {fields,};
+                    });},
+                })),
+                isCustom ? e("td", {}, e("button", {
+                    onClick() {
+                        setState((state) => {
+                            const {[key]: _, ...fields} = state.fields;
+                            return {fields,};
+                        });
+                    },
+                }, "Remove")) : null,
+            ]),
+            this.state._errors.hasOwnProperty(key) ? e("tr", {key: key + "_error"}, [
+                e("td", {colspan: isCustom ? 3 : 2, style: {color: "red"}}, this.state._errors[key]),
+            ]) : null,
+        ]);
     }
 
     render() {
@@ -94,35 +132,11 @@ class EditItem extends React.Component {
         }, [
             e("h1", {}, format(this.state.template.name, {data: formatFields})),
             e("table", {}, [
-                ...Object.keys(this.state.template.fields).map((key) => e("tr", {key}, [
-                    e("td", {}, e("label", {htmlFor: key}, key)),
-                    e("td", {}, e(LazyAutocomplete, {
-                        id: key,
-                        url: "/api/common_values/" + key,
-                        value: this.state.fields[key].value, // TODO Fields might not exist
-                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: {value, type: state.fields[key].type}}}))}
-                    })),
-                ])),
+                ...Object.keys(this.state.template.fields).map(this.renderField.bind(this)),
             ]),
             e("h2", {}, "Additional Attributes"),
             e("table", {}, [
-                ...nonTempFields.map((key) => e("tr", {key}, [
-                    e("td", {}, e("label", {htmlFor: key}, key)),
-                    e("td", {}, e(LazyAutocomplete, {
-                        id: key,
-                        url: "/api/common_values/" + key,
-                        value: this.state.fields[key].value,
-                        setValue(value) {setState((state) => ({fields: {...state.fields, [key]: {value, type: state.fields[key].type}}}))}
-                    })),
-                    e("td", {}, e("button", {
-                        onClick() {
-                            setState((state) => {
-                                const {[key]: toRemove, ...toKeep} = state.fields;
-                                return {fields: toKeep};
-                            });
-                        },
-                    }, "Remove")),
-                ])),
+                ...nonTempFields.map(this.renderField.bind(this)),
                 e("tr", {key: "_addAttr"}, [
                     e("td"),
                     e("td", {}, e("form", {
@@ -139,25 +153,25 @@ class EditItem extends React.Component {
                     })))),
                     e("td", {}, e("button", {
                         onClick() {
-                            setState((state) => ({fields: {[state._toAdd]: "", ...state.fields}, _toAdd: ""}));
+                            // TODO how to enter type of new field
+                            setState((state) => ({fields: {[state._toAdd]: {value: "", type: "string"}, ...state.fields}, _toAdd: ""}));
                         },
                     }, "Add")),
                 ]),
             ]),
             e("button", {
                 onClick: function() {
-                    setState({_reloading: true});
+                    setState({_reloading: true, _error: null, _errors: {}});
                     request(this.apiEndpoint, "PUT", "json", {fields: this.state.fields})
-                    .then(({success, result}) => {
-                        if (success) {
-                            setState({_reloading: false, ...result});
-                        } else {
-                            console.error("Couldn't save item");
-                        }
+                    .then(({result, error, errors}) => {
+                        setState({_reloading: false, _error: error || null, _errors: errors || {}, ...result});
+                    })
+                    .catch((httpError) => {
+                        console.error("Couldn't save item: "+httpError);
                     });
                 }.bind(this),
             }, "Save"),
-            this.state._reloading ? "Reloading..." : null,
+            this.state._error ? e("span", {style: {color: "red"}}, this.state._error) : this.state._reloading ? "Reloading..." : null,
         ]);
     }
 }
