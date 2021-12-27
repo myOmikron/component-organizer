@@ -230,7 +230,7 @@ class Dict(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._data = None
+        self._data: dict = None
 
     @classmethod
     def populate_queryset(cls, queryset):
@@ -318,6 +318,11 @@ class Dict(models.Model):
 
         if self._data is not None:
             self._data.update(fields)
+
+    def clear(self):
+        KeyValuePair.objects.filter(owner=self).delete()
+        if self._data:
+            self._data.clear()
 
     def keys(self):
         if self._data is None:

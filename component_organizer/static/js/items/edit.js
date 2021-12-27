@@ -99,7 +99,7 @@ class EditItem extends React.Component {
                     e("td", {}, e(LazyAutocomplete, {
                         id: key,
                         url: "/api/common_values/" + key,
-                        value: this.state.fields[key].value,
+                        value: this.state.fields[key].value, // TODO Fields might not exist
                         setValue(value) {setState((state) => ({fields: {...state.fields, [key]: {value, type: state.fields[key].type}}}))}
                     })),
                 ])),

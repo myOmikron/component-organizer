@@ -7,22 +7,25 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.csrf import csrf_exempt
 
-from backend.models import StringValue, ItemTemplate, Item, Category, Dict
+from backend.models import StringValue, ItemTemplate, Item, Category
 from backend import queries
 from backend.queries import filter_items
 
 
-def check_params(data: dict, parameters: list[tuple[str, type]]):
+def check_params(data: dict, parameters: list[tuple[str, type]], /, require_all: bool = True):
     for name, dtype in parameters:
-        if name not in data:
+        if require_all and name not in data:
             return JsonResponse({"success": False, "error": f"Missing parameter: {name}"}, status=400)
-        if dtype and not isinstance(data[name], dtype):
-            return JsonResponse({"success": False, "error": "Parameter '{name}' must be of type '{dtype}'"}, status=400)
+        if dtype and name in data and not isinstance(data[name], dtype):
+            return JsonResponse(
+                {"success": False, "error": f"Parameter '{name}' must be of type '{dtype.__name__}'"},
+                status=400
+            )
     else:
         return None
 
 
-value_types = dict((ValueModel.api_name, ValueModel) for ValueModel in Dict.iter_value_models())
+value_types = dict((ValueModel.api_name, ValueModel) for ValueModel in Item.iter_value_models())
 
 
 class ApiAuth(LoginRequiredMixin, View):
@@ -61,6 +64,7 @@ class ItemView(View):
         for key, type_n_value in fields.items():
             if not isinstance(type_n_value, dict):
                 errors.append((key, "Field must be object with 'type' and 'value'"))
+                continue
 
             if "type" not in type_n_value:
                 errors.append((key, "Missing type"))
@@ -129,43 +133,25 @@ class ItemView(View):
             except Item.DoesNotExist:
                 return JsonResponse({"success": False, "error": "Unknown item"}, status=404)
 
-    def post(self, request, *args, **kwargs):
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
-
-        if error := check_params(data, [("category", int), ("template", int), ("fields", dict)]):
-            return error
-
-        if not ItemTemplate.objects.filter(id=data["template"]).exists():
-            return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
-        if not Category.objects.filter(id=data["category"]).exists():
-            return JsonResponse({"success": False, "error": "Unknown category"}, status=404)
-        fields_by_type, errors = self._prepare_fields(data["fields"])
-        if errors:
-            return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
-                                 "errors": dict(errors)}, status=400)
-
-        item = Item.objects.create(category_id=data["category"], template_id=data["template"])
-        self._set_fields(item, data["fields"])
-
-        return JsonResponse(
-            {"success": True, "result": self.item2dict(item)},
-            status=200
-        )
-
     def put(self, request, *args, pk=None, **kwargs):
-        try:
-            item: Item = Item.objects.get(id=pk)
-        except Item.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Unknown item"}, status=404)
+        # Retrieve item or create new one
+        if pk is None:
+            item = Item()
+        else:
+            try:
+                item: Item = Item.objects.get(id=pk)
+            except Item.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Unknown item"}, status=404)
 
+        # Parse parameters
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
+        # Check parameters
+        if error := check_params(data, [("category", int), ("template", int), ("fields", dict)], require_all=pk is None):
+            return error
         if "template" in data and not ItemTemplate.objects.filter(id=data["template"]).exists():
             return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
         if "category" in data and not Category.objects.filter(id=data["category"]).exists():
@@ -179,17 +165,15 @@ class ItemView(View):
                     return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
                                          "errors": dict(errors)}, status=400)
 
+        # Perform actual state changes
         if "template" in data:
             item.template_id = data["template"]
         if "category" in data:
             item.category_id = data["category"]
-        if "fields" in data:
-            self._set_fields(item, fields_by_type)
-            current_fields = list(data["fields"].keys()) + item.template.get_fields()
-            for key in list(item.keys()):
-                if key not in current_fields:
-                    del item[key]
         item.save()
+        if "fields" in data:
+            item.clear()
+            self._set_fields(item, fields_by_type)
 
         return JsonResponse(
             {"success": True, "result": self.item2dict(item)},
