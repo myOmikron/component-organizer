@@ -22,7 +22,7 @@ export class ContainerTree extends React.Component {
         }
     }
 
-    renderContainer(ct) {
+    renderContainer(ct, style = {}) {
         const setState = this.setState.bind(this);
         const {name, children} = this.props.containers[ct];
         const {openContainer, createContainer} = this.props;
@@ -41,7 +41,7 @@ export class ContainerTree extends React.Component {
             }
         }
 
-        return e("table", {className: "container-tree"}, [
+        return e("table", {className: "container-tree", style}, [
             e("tr", {}, [
                 e("td", {
                     colSpan: 2,
@@ -76,7 +76,7 @@ export class ContainerTree extends React.Component {
     }
 
     render() {
-        return this.renderContainer(this.props.root);
+        return this.renderContainer(this.props.root, {margin: "8px"});
     }
 }
 ContainerTree.defaultProps = {
@@ -126,11 +126,6 @@ export class SplitScreen extends React.Component {
         return e("div", {
             key: "outerDiv",
             ref: this.outerDiv,
-            style: {
-                position: "relative",
-                width: "100vw",
-                height: "100vh",
-            },
             onMouseMove: this.state.grabbedSeperator ? function ({clientX, clientY, buttons, ...event}) {
                 if (buttons & 1) {
                     const {clientWidth, clientHeight, clientLeft, clientTop} = this.outerDiv.current;

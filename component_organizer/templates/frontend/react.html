@@ -3,7 +3,7 @@
 {% block body %}
     <link rel="stylesheet" href="{% static css_file %}">
     <script type="module" src="{% static js_file %}"></script>
-    <div id="root"></div>
+    <div id="root" class="react-root"></div>
     <script>
         {% if props %}
             document.props = JSON.parse({{ props | safe }});
