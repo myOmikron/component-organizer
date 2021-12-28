@@ -1,2 +1,2 @@
-export * from './local-react/react-dom.dev.js';
-export {default} from './local-react/react-dom.dev.js';
+export * from 'https://cdn.skypack.dev/react-dom';
+export {default} from 'https://cdn.skypack.dev/react-dom';
