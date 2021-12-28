@@ -2,7 +2,7 @@ import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
 import {request} from "../async.js";
-import {LazyAutocomplete} from "../textinput.js";
+import {AddKeyRow, LazyAutocomplete} from "../textinput.js";
 
 const e = React.createElement;
 
@@ -120,13 +120,15 @@ class EditItem extends React.Component {
     }
 
     render() {
+        const {fields} = this.state;
+        const {setState} = this;
+
         const nonTempFields = [];
         for (const key in this.state.fields) {
             if (!this.state.template.fields.hasOwnProperty(key)) {
                 nonTempFields.push(key);
             }
         }
-        const setState = this.setState.bind(this);
 
         const formatFields = {};
         for (const [key, {value}] of Object.entries(this.state.fields)) {
@@ -145,24 +147,18 @@ class EditItem extends React.Component {
                 ...nonTempFields.map(this.renderField.bind(this)),
                 e("tr", {key: "_addAttr"}, [
                     e("td"),
-                    e("td", {}, e("form", {
-                        onSubmit: function (event) {
-                            setState((state) => ({fields: {[state._toAdd]: "", ...state.fields}, _toAdd: ""}));
-                            this._addAttrInput.focus();
-                            event.preventDefault();
-                        }.bind(this),
-                    }, e("label", {}, e(LazyAutocomplete, {
-                        url: "/api/common_keys",
-                        value: this.state._toAdd,
-                        setValue(value) {setState({_toAdd: value});},
-                        reference: function (element) {this._addAttrInput = element;}.bind(this),
-                    })))),
-                    e("td", {}, e("button", {
-                        onClick() {
-                            // TODO how to enter type of new field
-                            setState((state) => ({fields: {[state._toAdd]: {value: "", type: "string"}, ...state.fields}, _toAdd: ""}));
+                    e(AddKeyRow, {
+                        addField(field, type) {
+                            if (!fields.hasOwnProperty(field) || fields[field].type !== type) {
+                                setState((state) => ({
+                                    fields: {...state.fields, [field]: {value: "", type: type}}
+                                }));
+                                return true;
+                            } else {
+                                return false;
+                            }
                         },
-                    }, "Add")),
+                    }),
                 ]),
             ]),
             e("button", {

@@ -2,7 +2,7 @@ import React from "../react.js";
 import ReactDOM from "../react-dom.js";
 
 import {request} from "../async.js";
-import TextInput, {LazyAutocomplete} from "../textinput.js";
+import TextInput, {AddKeyRow, LazyAutocomplete} from "../textinput.js";
 import {ContainerTree, SplitScreen} from "../trees.js";
 
 const e = React.createElement;
@@ -22,7 +22,6 @@ class EditTemplate extends React.Component {
                 id: -1,
                 name: "",
             },
-            _toAdd: "",
         }
 
         this.apiEndpoint = "/api/template/" + this.props.template;
@@ -35,9 +34,7 @@ class EditTemplate extends React.Component {
     render() {
         const setState = this.setState.bind(this);
         const {openTemplate} = this.props;
-        const {parent} = this.state;
-
-        const ownFields = this.state.ownFields;
+        const {ownFields, fields, parent} = this.state;
         const parentFields = Object.keys(this.state.fields).filter(field => !this.state.ownFields.includes(field));
 
         function removeField(field) {
@@ -45,19 +42,6 @@ class EditTemplate extends React.Component {
                 if (state.ownFields.includes(field)) {
                     const {[field]: _, ...fields} = state.fields;
                     return {fields, ownFields: state.ownFields.filter(item => item !== field)};
-                } else {
-                    return {};
-                }
-            });
-        }
-        function addField() {
-            setState(function (state) {
-                if (!state.fields.hasOwnProperty(state._toAdd)) {
-                    return {
-                        fields: {...state.fields, [state._toAdd]: "string"},
-                        ownFields: [...state.ownFields, state._toAdd],
-                        _toAdd: "",
-                    }
                 } else {
                     return {};
                 }
@@ -77,23 +61,19 @@ class EditTemplate extends React.Component {
                     e("td", {}, field),
                     e("td", {}, e("button", {onClick() {removeField(field);}}, "Remove"))
                 ])),
-                e("tr", {}, [
-                    e("td", {}, e("form", {
-                        onSubmit: function (event) {
-                            addField();
-                            this._addAttrInput.focus();
-                            event.preventDefault();
-                        }.bind(this),
-                    }, e("label", {}, e(LazyAutocomplete, {
-                        url: "/api/common_keys",
-                        value: this.state._toAdd,
-                        setValue(value) {setState({_toAdd: value});},
-                        reference: function (element) {this._addAttrInput = element;}.bind(this),
-                    })))),
-                    e("td", {}, e("button", {
-                        onClick: addField,
-                    }, "Add")),
-                ]),
+                e("tr", {}, e(AddKeyRow, {
+                    addField(field, type) {
+                        if (!fields.hasOwnProperty(field)) {
+                            setState((state) => ({
+                                fields: {...state.fields, [field]: type},
+                                ownFields: [...state.ownFields, field],
+                            }));
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    },
+                })),
             ]),
             e("button", {
                 onClick: function () {
