@@ -131,13 +131,12 @@ class NewTemplate extends React.Component {
 
         this.state = {
             name: "",
-            item_name: "",
             fields: {},
         };
     }
 
     send() {
-        request("/api/template", "PUT", "json", {...this.state, parent: this.props.parent})
+        request("/api/template", "PUT", "json", {...this.state, parent: this.props.parent, item_name: this.props.itemName})
         .then(({success, result}) => {
             if (success) {
                 window.location = "/template/" + result.id;
@@ -156,22 +155,17 @@ class NewTemplate extends React.Component {
                     event.preventDefault();
                     send();
                 }
-            }, [
-                e("label", {}, ["Template Name ", e(TextInput, {
-                    value: this.state.name,
-                    setValue: function (value) {this.setState({name: value});}.bind(this),
-                })]),
-                e("label", {}, ["Item Name Template ", e(TextInput, {
-                    value: this.state.item_name,
-                    setValue: function (value) {this.setState({item_name: value});}.bind(this),
-                })])
-            ]),
+            }, e("label", {}, ["Template Name ", e(TextInput, {
+                value: this.state.name,
+                setValue: function (value) {this.setState({name: value});}.bind(this),
+            })])),
             e("button", {onClick: send}, "Create")
         ]);
     }
 }
 NewTemplate.defaultProps = {
     parent: 0,
+    itemName: "Undefined Item",
 };
 
 class Main extends React.Component {
@@ -185,6 +179,7 @@ class Main extends React.Component {
         this.state = {
             currentTemplate: this.initialTemplate,
             createNewTemplate: false,
+            currentItemName: "Undefined Item", // Only updated when creating new template
         };
     }
 
@@ -196,13 +191,19 @@ class Main extends React.Component {
             e(ContainerTree, {
                 key: "containerTree",
                 openContainer: openTemplate,
-                createContainer(id) {setState({currentTemplate: id, createNewTemplate: true});},
+                createContainer(id) {
+                    request("/api/template/" + id).then(({item_name}) => {
+                        setState({currentItemName: item_name});
+                    });
+                    setState({currentTemplate: id, createNewTemplate: true});
+                },
                 initiallyOpened: [this.initialTemplate],
                 ...this.props,
             }),
             this.state.createNewTemplate ? e(NewTemplate, {
                 key: "newTemplate" + this.state.currentTemplate,
                 parent: this.state.currentTemplate,
+                itemName: this.state.currentItemName,
             }) : e(EditTemplate, {
                 key: "template" + this.state.currentTemplate,
                 template: this.state.currentTemplate,
