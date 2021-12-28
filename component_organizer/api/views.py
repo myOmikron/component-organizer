@@ -7,7 +7,7 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.csrf import csrf_exempt
 
-from backend.models import StringValue, ItemTemplate, Item, Category, ItemTemplateField
+from backend.models import StringValue, ItemTemplate, Item, Category, ItemTemplateField, FileValue
 from backend import queries
 from backend.queries import filter_items
 
@@ -45,6 +45,14 @@ class GetValues(View):
         values = queries.get_values(key)  # TODO might want to limit number of values
         values.sort(key=lambda v: v.uses, reverse=True)
         return JsonResponse([value.value for value in values], safe=False)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UploadFile(View):
+
+    def post(self, request):
+        file = FileValue.objects.create(value=request.FILES["file"])
+        return JsonResponse({"success": True, "result": str(file.value)})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -114,7 +122,7 @@ class ItemView(View):
                 "name": item.template.name_format,
                 "fields": dict((key, value.api_name) for key, value in item.template.get_fields().items())
             } if expand_template else item.template_id,
-            "fields": dict((key, {"value": model.value, "type": model.api_name})
+            "fields": dict((key, {"value": str(model.value), "type": model.api_name})
                            for key, model in item.items()),
         }
 

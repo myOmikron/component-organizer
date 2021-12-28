@@ -126,6 +126,11 @@ class StringValue(_SingleValue):
     value = models.CharField(max_length=255, default="", unique=True)
 
 
+class FileValue(_SingleValue):
+    api_name = "file"
+    value = models.FileField(max_length=255)
+
+
 class FloatValue(_SingleValue):
     api_name = "number"
     value = models.FloatField(default=0, unique=True)
@@ -223,7 +228,7 @@ class Dict(models.Model):
 
     @classmethod
     def iter_value_models(cls):
-        return [FloatValue, StringValue, UnitValue]
+        return [FloatValue, StringValue, UnitValue, FileValue]
 
     class Meta:
         abstract = True
