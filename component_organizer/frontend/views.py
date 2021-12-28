@@ -88,7 +88,6 @@ class ItemListView(TemplateView):
 
         # Retrieve all keys used by any of the items
         # and all keys all items have in common
-        # TODO: formulate this as an efficient query
         keys = set()
         common_keys = None
         for item in items:
@@ -98,6 +97,8 @@ class ItemListView(TemplateView):
                 common_keys = item_keys
             else:
                 common_keys.intersection_update(item_keys)
+        if common_keys is None:
+            common_keys = set()
 
         # Output query
         return render(request=request, template_name=self.template_name, context={
