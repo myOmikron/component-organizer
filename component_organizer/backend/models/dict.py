@@ -144,11 +144,11 @@ class UnitValue(_SingleValue):
     api_name = "unit"
     number = models.ForeignKey(FloatValue, on_delete=models.CASCADE)
     unit = models.ForeignKey(StringValue, on_delete=models.CASCADE)
-    _pattern = re.compile(r"^([+-]?(?:\d+|\d*\.\d+)(?:e[+-]?\d+)?) *(.+)$")
+    _pattern = re.compile(r"^([+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?) *(.+)$")
 
     @property
     def value(self):
-        return [self.number.value, self.unit.value]
+        return self.number.value, self.unit.value
 
     def __str__(self):
         return f"{self.number} {self.unit}"
@@ -161,7 +161,7 @@ class UnitValue(_SingleValue):
         if match := cls._pattern.match(string):
             number = float(match.group(1))
             unit = match.group(2)
-            return [number, unit]
+            return (number, unit)
         else:
             raise ValueError(f"{repr(string)} doesn't match regex")
 
@@ -175,8 +175,8 @@ class UnitValue(_SingleValue):
 
     @classmethod
     def bulk_get(cls, values: Iterable) -> dict:
-        numbers = FloatValue.bulk_get([number for number, _, _ in values])
-        units = StringValue.bulk_get([unit for _, _, unit in values])
+        numbers = FloatValue.bulk_get([number for number, _ in values])
+        units = StringValue.bulk_get([unit for _, unit in values])
         objects = {}
         for number, unit in values:
             # TODO find better solution than single get_or_creates

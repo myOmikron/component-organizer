@@ -84,7 +84,7 @@ class ItemListView(TemplateView):
         items = []
         for item in Item.populate_queryset(item_query):
             items.append({"name": str(item), "amount": 0, "url": item.url,
-                          "fields": dict((key, {"value": str(model.value), "type": model.api_name})
+                          "fields": dict((key, {"value": str(model), "type": model.api_name})
                                          for key, model in item.items())})
 
         # Retrieve all keys used by any of the items

@@ -122,27 +122,39 @@ export function LazyAutocomplete(props) {
     });
 }
 
-// TODO how to enter type of new field
 export function AddKeyRow(props) {
     const {addField} = props;
     const reference = React.useRef(null);
-    const [value, setValue] = React.useState("");
+    const [field, setField] = React.useState("");
+    const [type, setType] = React.useState("string");
     function wrappedAddField(event) {
         if (event) {
             event.preventDefault();
         }
-        if (addField(value, "string")) {
-            setValue("");
+        if (addField(field, type)) {
+            setField("");
             if (reference.current) {reference.current.focus();}
         }
     }
 
-    return e(React.Fragment, {}, [
+    return e("tr", {}, [
+        e("td", {}, e("select", {
+            value: type,
+            onChange(event) {
+                setType(event.target.value);
+            },
+        }, [
+            e("option", {value: "string"}, "String"),
+            e("option", {value: "number"}, "Number"),
+            e("option", {value: "unit"}, "Number with Unit"),
+            e("option", {value: "file"}, "File"),
+        ])),
         e("td", {}, e("form", {
             onSubmit: wrappedAddField,
         }, e("label", {}, e(LazyAutocomplete, {
             url: "/api/common_keys",
-            value, setValue,
+            value: field,
+            setValue: setField,
             reference,
         })))),
         e("td", {}, e("button", {

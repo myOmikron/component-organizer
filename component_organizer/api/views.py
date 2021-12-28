@@ -122,7 +122,7 @@ class ItemView(View):
                 "name": item.template.name_format,
                 "fields": dict((key, value.api_name) for key, value in item.template.get_fields().items())
             } if expand_template else item.template_id,
-            "fields": dict((key, {"value": str(model.value), "type": model.api_name})
+            "fields": dict((key, {"value": str(model), "type": model.api_name})
                            for key, model in item.items()),
         }
 

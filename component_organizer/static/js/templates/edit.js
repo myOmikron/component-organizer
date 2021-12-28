@@ -58,10 +58,11 @@ class EditTemplate extends React.Component {
             e("h1", {}, "Own fields"),
             e("table", {}, [
                 ownFields.map((field) => e("tr", {}, [
+                    e("td"),
                     e("td", {}, field),
                     e("td", {}, e("button", {onClick() {removeField(field);}}, "Remove"))
                 ])),
-                e("tr", {}, e(AddKeyRow, {
+                e(AddKeyRow, {
                     addField(field, type) {
                         if (!fields.hasOwnProperty(field)) {
                             setState((state) => ({
@@ -73,7 +74,7 @@ class EditTemplate extends React.Component {
                             return false;
                         }
                     },
-                })),
+                }),
             ]),
             e("button", {
                 onClick: function () {

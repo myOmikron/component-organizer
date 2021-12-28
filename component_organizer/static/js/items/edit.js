@@ -145,21 +145,19 @@ class EditItem extends React.Component {
             e("h2", {}, "Additional Attributes"),
             e("table", {}, [
                 ...nonTempFields.map(this.renderField.bind(this)),
-                e("tr", {key: "_addAttr"}, [
-                    e("td"),
-                    e(AddKeyRow, {
-                        addField(field, type) {
-                            if (!fields.hasOwnProperty(field) || fields[field].type !== type) {
-                                setState((state) => ({
-                                    fields: {...state.fields, [field]: {value: "", type: type}}
-                                }));
-                                return true;
-                            } else {
-                                return false;
-                            }
-                        },
-                    }),
-                ]),
+                e(AddKeyRow, {
+                    key: "_addAttr",
+                    addField(field, type) {
+                        if (!fields.hasOwnProperty(field) || fields[field].type !== type) {
+                            setState((state) => ({
+                                fields: {...state.fields, [field]: {value: "", type: type}}
+                            }));
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    },
+                }),
             ]),
             e("button", {
                 onClick: function() {
