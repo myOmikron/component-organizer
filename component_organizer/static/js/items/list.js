@@ -161,6 +161,7 @@ class ItemList extends React.Component {
 
         return e("div", {
             className: "flex-vertical",
+            style: {margin: "8px"},
         }, [
             e("form", {}, [
                 e(AutoComplete, {
@@ -191,7 +192,13 @@ class ItemList extends React.Component {
                     e("tbody", {}, this.props.items.map(({name, url, amount, fields}) => (
                         e("tr", {}, [
                             e("td", {}, e("b", {}, e("a", {href: url}, name))),
-                            ...shownKeys.map((key) => e("td", {}, fields[key] || "---")),
+                            ...shownKeys.map((key) => e("td", {},
+                                fields[key] ? (
+                                    fields[key].type !== "file" ?
+                                        fields[key].value
+                                        : e("a", {href: "/media/" + fields[key].value}, fields[key].value))
+                                    : "---")
+                            ),
                             e("td", {}, amount),
                         ])
                     ))),

@@ -46,6 +46,13 @@ function format(string, kwargs) {
     });
 }
 
+function get_or_create(object, key, value) {
+    if (!object.hasOwnProperty(key)) {
+        object[key] = value();
+    }
+    return object[key];
+}
+
 class EditItem extends React.Component {
 
     constructor(props) {
@@ -67,6 +74,7 @@ class EditItem extends React.Component {
         }
 
         this._addAttrInput = null;
+        this._fileInputs = {};
         const path = window.location.pathname.split("/");
         this.apiEndpoint = "/api/item/" + path[path.length-1];
         request(this.apiEndpoint).then(this.setState.bind(this));
@@ -81,7 +89,7 @@ class EditItem extends React.Component {
         return e(React.Fragment, {}, [
             e("tr", {key}, [
                 e("td", {}, e("label", {htmlFor: key}, key)),
-                e("td", {}, e(LazyAutocomplete, {
+                e("td", {}, (field ? field.type : this.state.template.fields[key]) !== "file" ? e(LazyAutocomplete, {
                     id: key,
                     url: "/api/common_values/" + key,
                     value: field ? field.value : "",
@@ -92,7 +100,10 @@ class EditItem extends React.Component {
                         }
                         return {fields,};
                     });},
-                })),
+                }) : [
+                    e("a", {href: "/media/" + field.value}, field.value),
+                    e("input", {type: "file", ref: get_or_create(this._fileInputs, key, React.createRef)}),
+                ]),
                 isCustom ? e("td", {}, e("button", {
                     onClick() {
                         setState((state) => {
@@ -157,7 +168,26 @@ class EditItem extends React.Component {
             e("button", {
                 onClick: function() {
                     setState({_reloading: true, _error: null, _errors: {}});
-                    request(this.apiEndpoint, "PUT", "json", {fields: this.state.fields})
+                    (async function () {
+                        const fields = {};
+                        for (let [key, {value, type}] of Object.entries(this.state.fields)) {
+                            if (type === "file") {
+                                const input = this._fileInputs[key].current;
+                                if (input.files.length === 1) {
+                                    const form = new FormData()
+                                    form.append('file', input.files[0])
+                                    const {success, result} = JSON.parse(await request("/api/upload_file", "POST", "", form));
+                                    if (success) {
+                                        value = result;
+                                    } else {
+                                        return Promise.reject("Unable to upload file");
+                                    }
+                                }
+                            }
+                            fields[key] = {value, type,};
+                        }
+                        return await request(this.apiEndpoint, "PUT", "json", {fields,});
+                    }).bind(this)()
                     .then(({result, error, errors}) => {
                         setState({_reloading: false, _error: error || null, _errors: errors || {}, ...result});
                     })
