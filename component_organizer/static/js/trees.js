@@ -31,10 +31,10 @@ export class ContainerTree extends React.Component {
             if (createContainer) {
                 return e("tr", {}, [
                     e("td"), e("td"),
-                    e("td", {onClick() {createContainer(ct);}, style: {cursor: "pointer"}, className: "darker"}, [
-                        e("img", {src: "/static/img/star.svg", width: 26, height: 20}),
-                        "Create new entry here"
-                    ]),
+                    e("td", {
+                        className: "darker",
+                        onClick() {createContainer(ct);}, style: {cursor: "pointer"}
+                    }, "Create new entry here"),
                 ]);
             } else {
                 return null;
