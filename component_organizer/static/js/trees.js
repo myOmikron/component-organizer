@@ -31,7 +31,7 @@ export class ContainerTree extends React.Component {
             if (createContainer) {
                 return e("tr", {}, [
                     e("td"), e("td"),
-                    e("td", {onClick() {createContainer(ct);}, style: {cursor: "pointer"}}, [
+                    e("td", {onClick() {createContainer(ct);}, style: {cursor: "pointer"}, className: "darker"}, [
                         e("img", {src: "/static/img/star.svg", width: 26, height: 20}),
                         "Create new entry here"
                     ]),
@@ -158,12 +158,12 @@ export class SplitScreen extends React.Component {
                 key: "seperator",
                 style: {
                     position: "absolute",
-                    backgroundColor: "gray",
                     cursor: splitVertical ? "ew-resize" : "ns-resize",
                     [height]: "100%",
                     [left]: `calc(${seperatorPosition}% - ${seperatorWidth} / 2)`,
                     [width]: seperatorWidth,
                 },
+                className: "seperator",
                 onMouseDown() { setState({grabbedSeperator: true}); },
             }),
             e("div", {

@@ -1,3 +1,9 @@
+:root {
+    --background: #15202b;
+    --text: #eeeeee;
+    --text-dark: #888888;
+}
+
 .flex-horizontal {
     display: flex;
     flex-direction: row;
@@ -15,14 +21,14 @@
 }
 
 body {
-    background-color: #15202b;
-    color: #ffffff;
+    background-color: var(--background);
+    color: var(--text);
     font-family: 'Roboto', sans-serif;
 }
 
 a {
     text-decoration: None;
-    color: white;
+    color: var(--text);
 }
 
 /* ContainerTree */
@@ -35,7 +41,7 @@ table.container-tree > tr:first-child {
 }
 
 table.container-tree > tr:not(:first-child) > td:first-child {
-    border-right: 1px solid gray;
+    border-right: 1px solid var(--text-dark);
 }
 
 table.container-tree img {
@@ -45,4 +51,12 @@ table.container-tree img {
 
 table.container-tree img.closed-caret {
     transform: rotate(-90deg);
+}
+
+.darker {
+    color: var(--text-dark)!important;
+}
+
+.seperator {
+    background-color: var(--text-dark);
 }
