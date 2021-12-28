@@ -100,10 +100,10 @@ class EditItem extends React.Component {
                         }
                         return {fields,};
                     });},
-                }) : [
-                    e("a", {href: "/media/" + field.value}, field.value),
+                }) : e("form", {action: "/media/" + field.value, target: "_blank", method: "get"}, [
+                    e("button", {type: "submit"}, field.value),
                     e("input", {type: "file", ref: get_or_create(this._fileInputs, key, React.createRef)}),
-                ]),
+                ])),
                 isCustom ? e("td", {}, e("button", {
                     onClick() {
                         setState((state) => {

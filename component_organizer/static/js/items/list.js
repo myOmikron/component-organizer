@@ -196,7 +196,7 @@ class ItemList extends React.Component {
                                 fields[key] ? (
                                     fields[key].type !== "file" ?
                                         fields[key].value
-                                        : e("a", {href: "/media/" + fields[key].value}, fields[key].value))
+                                        : e("a", {href: "/media/" + fields[key].value, target: "_blank"}, fields[key].value))
                                     : "---")
                             ),
                             e("td", {}, amount),
