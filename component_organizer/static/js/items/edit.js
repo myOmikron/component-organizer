@@ -53,6 +53,32 @@ function get_or_create(object, key, value) {
     return object[key];
 }
 
+function FileUpload(props) {
+    const {style, reference, ...otherProps} = props;
+    const internalReference = React.useRef(null);
+    const ref = reference ? reference : internalReference;
+    const [name, setName] = React.useState(null);
+
+    return e(React.Fragment, {}, [
+        e("button", {
+            style,
+            onClick(event) {
+                event.preventDefault();
+                ref.current.click();
+            }
+        }, name === null ? "Upload new File" : `Replacing with <${name}>`),
+        e("input", {
+            type: "file",
+            style: {display: "none"},
+            ref,
+            onChange(event) {
+                setName(event.target.files.length === 1 ? event.target.files[0].name : null);
+            },
+            ...otherProps
+        }),
+    ]);
+}
+
 class EditItem extends React.Component {
 
     constructor(props) {
@@ -102,7 +128,7 @@ class EditItem extends React.Component {
                     });},
                 }) : e("form", {action: "/media/" + field.value, target: "_blank", method: "get"}, [
                     e("button", {type: "submit"}, field.value),
-                    e("input", {type: "file", ref: get_or_create(this._fileInputs, key, React.createRef)}),
+                    e(FileUpload, {reference: get_or_create(this._fileInputs, key, React.createRef)}),
                 ])),
                 isCustom ? e("td", {}, e("button", {
                     onClick() {
