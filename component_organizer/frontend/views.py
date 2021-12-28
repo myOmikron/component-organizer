@@ -171,5 +171,7 @@ class CreateContainerView(CreateView):
         return self.render_to_response(self.get_context_data(container=container))
 
 
-def redirect_to_root(*args, **kwargs):
-    return HttpResponseRedirect("/items")
+def redirect(to):
+    def view(*args, **kwargs):
+        return HttpResponseRedirect(to)
+    return view
