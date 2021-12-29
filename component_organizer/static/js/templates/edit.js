@@ -22,6 +22,8 @@ class EditTemplate extends React.Component {
                 id: -1,
                 name: "",
             },
+            _reloading: false,
+            _error: null,
         }
 
         this.apiEndpoint = "/api/template/" + this.props.template;
@@ -78,19 +80,20 @@ class EditTemplate extends React.Component {
             ]),
             e("button", {
                 onClick: function () {
+                    setState({_reloading: true, _error: null});
                     request(this.apiEndpoint, "PUT", "json", {
                         item_name: this.state.item_name, fields: Object.fromEntries(Object.entries(this.state.fields).filter(([name, _]) => this.state.ownFields.includes(name)))
                     })
-                    .then(({success, result}) => {
+                    .then(({success, result, error}) => {
                         if (success) {
-                            setState(result);
+                            setState({_reloading: false, ...result});
                         } else {
-                            // TODO show the error
-                            console.error("Couldn't save template");
+                            setState({_reloading: false, _error: error});
                         }
                     });
                 }.bind(this),
             }, "Save"),
+            this.state._error ? e("span", {style: {color: "red"}}, this.state._error) : this.state._reloading ? "Reloading..." : null,
             e("button", {
                 onClick: function () {
                     request(this.apiEndpoint, "DELETE")
