@@ -51,8 +51,8 @@ class _TreeNode(models.Model):
         :rtype: list of objects
         """
         parent_lookup = ["__".join("parent" for _ in range(i)) for i in range(1, self.PARENT_QUERY_DEPTH+1)]
-        path = [self]
-        container = self.__class__.objects.select_related(*parent_lookup).get(id=self.parent_id)
+        path = []
+        container = self.__class__.objects.select_related(*parent_lookup).get(id=self.id)
         for _ in range(self.PARENT_QUERY_DEPTH-1):
             path.insert(0, container)
             if container.is_root:
