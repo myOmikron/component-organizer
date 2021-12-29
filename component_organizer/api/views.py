@@ -232,6 +232,9 @@ class ItemTemplateView(View):
                 return JsonResponse({"success": False, "error": "Unknown template"}, status=404)
 
     def put(self, request, *args, pk=None, **kwargs):
+        if pk == 0:
+            return JsonResponse({"success": False, "error": "Can't update root"}, status=400)
+
         # Retrieve template or create new one
         if pk is None:
             template = ItemTemplate()
@@ -248,10 +251,17 @@ class ItemTemplateView(View):
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
         # Check parameters
-        if error := check_params(data, [("name", str), ("item_name", str), ("parent", int), ("fields", dict)], require_all=pk is None):
+        if error := check_params(data, [("name", str), ("item_name", str), ("parent", int), ("fields", dict)],
+                                 require_all=pk is None):
             return error
-        if "parent" in data and not ItemTemplate.objects.filter(id=data["parent"]).exists():
-            return JsonResponse({"success": False, "error": "Unknown parent"}, status=404)
+        if "parent" in data:
+            if not ItemTemplate.objects.filter(id=data["parent"]).exists():
+                return JsonResponse({"success": False, "error": "Unknown parent"}, status=404)
+            elif pk is not None:
+                for child in ItemTemplate(id=data["parent"]).obj_path:
+                    if child.id == pk:
+                        return JsonResponse({"success": False, "error": "Can't set a child or self as parent"},
+                                            status=400)
         if "fields" in data:
             fields, errors = self._prepare_fields(data["fields"])
             if errors:
@@ -290,6 +300,9 @@ class ItemTemplateView(View):
         )
 
     def delete(self, request, *args, pk=None, **kwargs):
+        if pk == 0:
+            return JsonResponse({"success": False, "error": "Can't delete root"}, status=400)
+
         try:
             template: ItemTemplate = ItemTemplate.objects.get(id=pk)
         except ItemTemplate.DoesNotExist:
