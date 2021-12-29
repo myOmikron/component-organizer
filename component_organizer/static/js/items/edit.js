@@ -164,7 +164,7 @@ class EditItem extends React.Component {
         return e("div", {
             className: "flex-vertical",
         }, [
-            e("h1", {}, format(this.state.template.name, {data: formatFields})),
+            e("h1", {}, format(this.state.template.name, formatFields)),
             e("table", {}, [
                 ...Object.keys(this.state.template.fields).map(this.renderField.bind(this)),
             ]),

@@ -162,7 +162,4 @@ class Item(Dict):
         if self._data is None:
             self.populate()
 
-        try:
-            return self.template.name_format.format(data=defaultdict(lambda: "undefined", **self._data))
-        except (LookupError, AttributeError):
-            return f"Invalid formatting string: '{self.template.name_format}'"
+        return self.template.name_format.format(**self._data)

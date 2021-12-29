@@ -243,7 +243,7 @@ class ItemTemplateView(View):
 
         # Parse parameters
         try:
-            data = json.loads(request.body)
+            data: dict = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({"success": False, "error": "Couldn't parse json"}, status=400)
 
@@ -257,6 +257,19 @@ class ItemTemplateView(View):
             if errors:
                 return JsonResponse({"success": False, "error": "Invalid fields, see errors for details",
                                      "errors": errors}, status=400)
+        # Check the item_name references missing fields
+        if "item_name" in data or "fields" in data:
+            _name = data["item_name"] if "item_name" in data else template.name_format
+            _fields = (dict((key, value_types[value]) for key, value in data["fields"].items())
+                       if "fields" in data else template.get_fields())
+            try:
+                _name.format(**dict((field, ValueModel.example_value) for field, ValueModel in _fields.items()))
+            except (KeyError, LookupError):
+                return JsonResponse({"success": False, "error": "Template must contains all fields used in item_name"},
+                                    status=400)
+            except (ValueError, TypeError):
+                return JsonResponse({"success": False, "error": "A field type is not applicable for its formatting"},
+                                    status=400)
 
         # Perform actual state changes
         if "name" in data:

@@ -12,6 +12,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 
 class _SingleValue(models.Model):
     api_name: str = NotImplemented
+    example_value: Any = ""
+    """This value will be used to test whether this type can be used in a format string"""
     value: models.Field = NotImplemented
     value_in_pairs = GenericRelation("KeyValuePair", object_id_field="value_id", content_type_field="value_type")
     _content_type: ContentType = None
@@ -133,6 +135,7 @@ class FileValue(_SingleValue):
 
 class FloatValue(_SingleValue):
     api_name = "number"
+    example_value = 0
     value = models.FloatField(default=0, unique=True)
 
     @classmethod
